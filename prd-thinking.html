@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRD 思辨工坊 - 深度思考引导</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --pink: #ff6b9d; --purple: #c471ed; --blue: #667eea; --teal: #12c2e9;
+  --orange: #f5af19; --green: #43e97b; --bg: #fef9ff; --card: #ffffff;
+  --text: #2d3436; --text-light: #636e72;
+  --shadow: 0 4px 20px rgba(149,117,205,0.12);
+  --radius: 20px; --radius-sm: 14px;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: linear-gradient(135deg, #fef9ff, #f0e6ff, #e8f4fd);
+  min-height: 100vh; color: var(--text); line-height: 1.6;
+}
+.container { max-width: 720px; margin: 0 auto; padding: 20px; }
+
+/* Header */
+.header { text-align: center; padding: 30px 0 16px; }
+.header .icon { font-size: 48px; display: block; animation: bounce 2s infinite; }
+.header h1 { font-size: 26px; font-weight: 800; margin-bottom: 4px;
+  background: linear-gradient(135deg, var(--pink), var(--purple), var(--blue));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.header .sub { font-size: 13px; color: var(--text-light); }
+@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+
+/* Phase indicator */
+.phase-bar { display: flex; gap: 6px; margin-bottom: 20px; }
+.phase-dot { flex: 1; height: 4px; background: #e0e0e0; border-radius: 2px; transition: all .4s; }
+.phase-dot.active { background: linear-gradient(90deg, var(--pink), var(--purple)); }
+.phase-dot.done { background: var(--green); }
+
+/* Main card */
+.main { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 32px 28px; min-height: 360px; }
+
+/* Chat-like messages */
+.msg { animation: fadeIn .4s ease; margin-bottom: 24px; }
+.msg-ai { display: flex; gap: 10px; align-items: flex-start; }
+.msg-ai .avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--pink), var(--purple)); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.msg-ai .bubble { background: #f8f0ff; border-radius: 16px 16px 16px 4px; padding: 14px 18px; max-width: 560px; font-size: 14px; line-height: 1.7; }
+.msg-ai .bubble strong { color: var(--purple); }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Category grid */
+.cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px,1fr)); gap: 10px; margin: 16px 0; }
+.cat-card { background: #fafafa; border: 2px solid #e8e8e8; border-radius: 14px; padding: 14px 8px; cursor: pointer; text-align: center; transition: all .3s; }
+.cat-card:hover { border-color: var(--purple); transform: translateY(-2px); }
+.cat-card.selected { border-color: var(--purple); background: #f3e8ff; box-shadow: 0 0 0 3px rgba(196,113,237,.15); }
+.cat-card.disabled { opacity: .35; pointer-events: none; }
+.cat-card .ci { font-size: 26px; display: block; margin-bottom: 4px; }
+.cat-card .cn { font-size: 12px; font-weight: 600; }
+.cat-count { font-size: 13px; color: var(--text-light); text-align: center; margin-bottom: 8px; }
+
+/* Choice cards */
+.choice-list { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.choice-card { background: #fafafa; border: 2px solid #e8e8e8; border-radius: var(--radius-sm); padding: 14px 18px; cursor: pointer; transition: all .3s; display: flex; align-items: center; gap: 12px; }
+.choice-card:hover { border-color: var(--purple); background: #f3e8ff; }
+.choice-card.selected { border-color: var(--purple); background: #f3e8ff; }
+.choice-dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #ccc; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; }
+.choice-card.selected .choice-dot { background: var(--purple); border-color: var(--purple); }
+.choice-text { font-size: 14px; color: var(--text); }
+
+/* Multi select for features */
+.check-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.check-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; background: #fafafa; border: 2px solid #e8e8e8; border-radius: 12px; cursor: pointer; transition: all .3s; }
+.check-item:hover { border-color: var(--purple); background: #f8f0ff; }
+.check-item.selected { border-color: var(--purple); background: #f0e4ff; }
+.check-box { width: 20px; height: 20px; border-radius: 5px; border: 2px solid #ccc; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; margin-top: 2px; }
+.check-item.selected .check-box { background: var(--purple); border-color: var(--purple); }
+.check-label { font-size: 14px; color: var(--text); line-height: 1.5; flex: 1; }
+.check-label .pri { color: var(--purple); font-weight: 600; margin-right: 4px; }
+
+/* Text input */
+.text-input { width: 100%; margin-top: 14px; padding: 12px 16px; border: 2px solid #e8e8e8; border-radius: var(--radius-sm); font-size: 14px; font-family: inherit; color: var(--text); background: #fafafa; min-height: 80px; resize: vertical; transition: all .3s; }
+.text-input:focus { outline: none; border-color: var(--purple); background: #fff; box-shadow: 0 0 0 4px rgba(196,113,237,.1); }
+
+/* Research block */
+.research-block { background: #fef9e6; border: 2px solid #ffe082; border-radius: var(--radius-sm); padding: 18px; margin: 16px 0; }
+.research-block h3 { font-size: 15px; margin-bottom: 8px; color: var(--text); }
+.research-block .kw { display: inline-block; background: #fff; border: 1px solid #ffe082; border-radius: 20px; padding: 4px 12px; font-size: 13px; margin: 3px 4px 3px 0; color: var(--text); }
+.research-block .link { display: block; font-size: 13px; color: var(--blue); margin: 4px 0; text-decoration: underline; word-break: break-all; }
+
+/* Result */
+.result-block { background: #fafafa; border-radius: var(--radius-sm); padding: 20px; margin: 16px 0; border: 2px solid #f0f0f0; }
+.result-block h2 { font-size: 18px; margin-bottom: 12px; color: var(--purple); }
+.result-block .body { font-size: 14px; line-height: 1.8; color: var(--text); }
+.result-block .body h3 { font-size: 15px; margin: 12px 0 6px; }
+.result-block .body ul,.result-block .body ol { margin: 6px 0 6px 18px; }
+.result-block .body code { background: #2d3436; color: #dfe6e9; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+.result-block .body pre { background: #2d3436; color: #dfe6e9; padding: 12px 14px; border-radius: 10px; overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 8px 0; }
+.result-block .body pre code { background: none; padding: 0; }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 24px; border-radius: 50px; font-size: 14px; font-weight: 600; border: none; cursor: pointer; transition: all .3s; font-family: inherit; }
+.btn-primary { background: linear-gradient(135deg, var(--pink), var(--purple)); color: #fff; box-shadow: 0 4px 14px rgba(255,107,157,.25); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,107,157,.35); }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.btn-ai { background: linear-gradient(135deg, var(--orange), #ff6b6b); color: #fff; }
+.btn-copy { background: linear-gradient(135deg, var(--teal), var(--blue)); color: #fff; }
+.btn-outline { background: #fff; color: var(--purple); border: 2px solid var(--purple); }
+.btn-outline:hover { background: #f3e8ff; }
+.btn-small { padding: 6px 14px; font-size: 12px; }
+.btn-group { display: flex; gap: 10px; margin-top: 18px; justify-content: center; flex-wrap: wrap; }
+
+.loading { text-align: center; padding: 30px; color: var(--text-light); }
+.loading .spinner { font-size: 32px; animation: spin 1s linear infinite; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* Toast */
+.toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #2d3436; color: #fff; padding: 10px 24px; border-radius: 50px; font-size: 13px; font-weight: 600; z-index: 999; animation: toastIn .3s ease, toastOut .3s ease 1.5s forwards; pointer-events: none; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-16px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+@keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
+
+.footer { text-align: center; padding: 20px; color: var(--text-light); font-size: 12px; }
+
+@media (max-width: 640px) {
+  .main { padding: 24px 18px; }
+  .header h1 { font-size: 22px; }
+  .cat-grid { grid-template-columns: repeat(auto-fill, minmax(100px,1fr)); gap: 8px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <span class="icon">🧠</span>
+    <h1>PRD 思辨工坊</h1>
+    <p class="sub">先思考，再求助AI —— 小P引导你深度构思产品</p>
+  </div>
+
+  <div class="phase-bar" id="phaseBar"></div>
+  <div class="main" id="mainContent"></div>
+  <div class="footer">PRD 思辨工坊 · 深度思考引导模式</div>
+</div>
+
+<script>
+// ═══ API ═══
+const API_URL = 'https://api.deepseek.com/chat/completions';
+const MODEL_FLASH = 'deepseek-v4-flash';
+const MODEL_PRO = 'deepseek-v4-pro';
+const LS_KEY = 'prd_thinking_ds_key';
+function getApiKey() { return localStorage.getItem(LS_KEY) || ''; }
+function setApiKey(k) { localStorage.setItem(LS_KEY, k); }
+function hasApiKey() { const k = getApiKey(); return k && k.startsWith('sk-'); }
+
+async function callAI(prompt, model) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getApiKey()}` },
+    body: JSON.stringify({ model: model || MODEL_FLASH, messages: [{ role: 'user', content: prompt }], stream: false, temperature: 0.7 })
+  });
+  if (!res.ok) throw new Error('API 错误: ' + res.status);
+  const data = await res.json();
+  return data.choices[0].message.content;
+}
+
+// ═══ Categories ═══
+const CATS = [
+  { id:'social', icon:'🗣️', name:'社交沟通' }, { id:'homework', icon:'📝', name:'作业学习' },
+  { id:'parenting', icon:'👨‍👩‍👧', name:'亲子互动' }, { id:'sport', icon:'🏃', name:'运动健身' },
+  { id:'food', icon:'🥗', name:'饮食健康' }, { id:'reduce', icon:'♻️', name:'减少浪费' },
+  { id:'water', icon:'💧', name:'节约用水' }, { id:'animal', icon:'🐾', name:'保护动物' },
+  { id:'community', icon:'🤝', name:'社区公益' }, { id:'eco', icon:'🌍', name:'环保行动' },
+  { id:'campus', icon:'🏫', name:'校园服务' }, { id:'club', icon:'🎨', name:'兴趣社团' },
+];
+
+// ═══ State ═══
+const STATE = {
+  phase: 0, // 0=categories, 1=resolve, 2=questions, 3=research, 4=features, 5=prd, 6=tech
+  cats: [],
+  userAnswers: [],  // answers to ai-generated questions
+  researchNotes: '',
+  selectedFeatures: [],
+  prdText: '',
+  techText: '',
+  allContext: {}, // accumulated context for AI prompts
+};
+const PHASES = ['选方向','思辨问答','资料调研','功能选择','生成PRD','技术方案'];
+
+// ═══ Render ═══
+const main = document.getElementById('mainContent');
+
+function buildPhaseBar() {
+  document.getElementById('phaseBar').innerHTML = PHASES.map((_,i) => {
+    let cls = ''; if (i < STATE.phase) cls = 'done'; else if (i === STATE.phase) cls = 'active';
+    return `<div class="phase-dot ${cls}"></div>`;
+  }).join('');
+}
+
+function showToast(msg) {
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 1900);
+}
+
+function btn(text, cls, onclick, disabled) {
+  return `<button class="btn ${cls}" onclick="${onclick}" ${disabled?'disabled':''}>${text}</button>`;
+}
+
+// ═══ Phase 0: Category Selection ═══
+function renderPhase0() {
+  buildPhaseBar();
+  main.innerHTML = `
+    <div class="msg msg-ai">
+      <div class="avatar">🤖</div>
+      <div class="bubble">
+        <strong>第一步：先想一想，你对什么感兴趣？</strong><br>
+        下面有12个方向，选 <strong>1~2 个</strong>你真正想探索的方向。
+        别急着让AI帮你选 —— 先问问自己：你真的关心这个话题吗？
+      </div>
+    </div>
+    <div class="cat-count">已选 <strong id="catCount">0</strong> / 2</div>
+    <div class="cat-grid" id="catGrid"></div>
+    <div class="btn-group">
+      ${btn('✨ 确认选择，进入下一步', 'btn-primary', 'confirmPhase0()', STATE.cats.length === 0)}
+    </div>
+  `;
+  const grid = document.getElementById('catGrid');
+  CATS.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'cat-card' + (STATE.cats.includes(c.id) ? ' selected' : '');
+    d.dataset.id = c.id;
+    d.innerHTML = `<span class="ci">${c.icon}</span><span class="cn">${c.name}</span>`;
+    d.onclick = () => toggleCat(c.id);
+    grid.appendChild(d);
+  });
+  updateCatUI();
+}
+
+function toggleCat(id) {
+  const i = STATE.cats.indexOf(id);
+  if (i >= 0) STATE.cats.splice(i, 1);
+  else if (STATE.cats.length < 2) STATE.cats.push(id);
+  else { showToast('最多选 2 个'); return; }
+  renderPhase0();
+}
+
+function updateCatUI() {
+  const grid = document.getElementById('catGrid');
+  if (!grid) return;
+  grid.querySelectorAll('.cat-card').forEach(c => {
+    c.classList.toggle('selected', STATE.cats.includes(c.dataset.id));
+    if (STATE.cats.length >= 2 && !STATE.cats.includes(c.dataset.id)) c.classList.add('disabled');
+    else c.classList.remove('disabled');
+  });
+}
+
+function confirmPhase0() {
+  if (STATE.cats.length === 0) { showToast('请至少选一个方向'); return; }
+  STATE.allContext.cats = STATE.cats.map(id => CATS.find(c => c.id === id).name).join('、');
+  STATE.phase = 1;
+  renderPhase1Start();
+}
+
+// ═══ Phase 1: AI generates questions ═══
+async function renderPhase1Start() {
+  buildPhaseBar();
+  // Check API key
+  if (!hasApiKey()) {
+    main.innerHTML = `<div class="msg msg-ai"><div class="avatar">🤖</div><div class="bubble">接下来的步骤需要 AI 辅助。请先配置 API Key。<br>${btn('🔑 配置 API Key', 'btn-ai', 'showApiModal()')}</div></div>`;
+    return;
+  }
+  main.innerHTML = `<div class="loading"><span class="spinner">⚙️</span><p>小P 正在根据你的方向「${STATE.allContext.cats}」出思考题……</p></div>`;
+
+  try {
+    const prompt = `你是一个面向小学生的产品思辨引导老师。学生选了兴趣方向：${STATE.allContext.cats}。
+
+请生成 4 道引导式选择题，帮助学生深入思考他们真正想做什么产品。
+
+要求：
+1. 第一道题：帮学生缩小范围——在他们选的方向中，更具体地对什么感兴趣？
+2. 第二道题：帮学生思考目标用户——想帮助哪一类人？（具体到年龄段、身份等）
+3. 第三道题：帮学生发现痛点——这个群体当前遇到什么具体问题？
+4. 第四道题：帮学生联想场景——什么时间、地点、情况下需要这个产品？
+
+每道题给 3 个选项（用A/B/C标记），选项要具体、有画面感，贴近小/初中生生活。格式严格如下：
+
+题1：题目标题
+A：选项描述
+B：选项描述
+C：选项描述
+
+题2：题目标题
+A：选项描述
+...
+
+注意：每道题的选项是互斥的（只能选一个），题与题之间空一行。`;
+
+    const result = await callAI(prompt);
+    STATE.questions = parseQuestions(result);
+    STATE.userAnswers = [];
+    STATE.questionIdx = 0;
+    renderQuestion();
+  } catch (e) {
+    main.innerHTML = `<div class="msg msg-ai"><div class="avatar">😢</div><div class="bubble">生成思考题失败：${e.message}<br>${btn('🔄 重试', 'btn-outline', 'renderPhase1Start()')}</div></div>`;
+  }
+}
+
+function parseQuestions(text) {
+  const qs = [];
+  const regex = /题\s*\d+\s*[：:]([\s\S]*?)(?=题\s*\d+\s*[：:]|$)/g;
+  let m;
+  while ((m = regex.exec(text)) !== null) {
+    const body = m[1].trim();
+    const lines = body.split('\n').filter(l => l.trim());
+    const title = lines[0] || '';
+    const opts = [];
+    for (let i = 1; i < lines.length; i++) {
+      const om = lines[i].match(/^([A-C])[\.\、\s：:]*\s*(.+)/);
+      if (om) opts.push({ key: om[1], text: om[2].trim() });
+    }
+    if (title && opts.length > 0) qs.push({ title, opts });
+  }
+  // fallback
+  if (qs.length === 0) {
+    const parts = text.split(/\n{2,}/).filter(p => p.trim());
+    parts.forEach(part => {
+      const lines = part.split('\n').filter(l => l.trim());
+      const title = lines[0] || '请选择一个选项';
+      const opts = [];
+      for (let i = 1; i < lines.length; i++) {
+        const om = lines[i].match(/^([A-C])[\.\、\s：:]*\s*(.+)/);
+        if (om) opts.push({ key: om[1], text: om[2].trim() });
+      }
+      if (opts.length > 0) qs.push({ title, opts });
+    });
+  }
+  return qs.slice(0, 5);
+}
+
+function renderQuestion() {
+  const q = STATE.questions[STATE.questionIdx];
+  buildPhaseBar();
+  if (!q) {
+    // All questions answered
+    STATE.phase = 2;
+    STATE.allContext.answers = STATE.userAnswers.map((a, i) => `Q: ${STATE.questions[i].title}\nA: ${a.text}`).join('\n');
+    renderPhase2();
+    return;
+  }
+  main.innerHTML = `
+    <div class="msg msg-ai">
+      <div class="avatar">🤖</div>
+      <div class="bubble">
+        <strong>思考题 ${STATE.questionIdx + 1} / ${STATE.questions.length}</strong><br>
+        ${q.title}
+      </div>
+    </div>
+    <div class="choice-list">${q.opts.map(o => `
+      <div class="choice-card" onclick="selectAnswer('${o.key}','${o.text.replace(/'/g,"\\'")}')">
+        <div class="choice-dot"></div>
+        <div class="choice-text"><strong>${o.key}.</strong> ${o.text}</div>
+      </div>
+    `).join('')}</div>
+    <div class="btn-group" style="margin-top:20px;">
+      ${btn('← 上一步', 'btn-outline', 'goPrevStep()')}
+    </div>
+  `;
+}
+
+function selectAnswer(key, text) {
+  STATE.userAnswers[STATE.questionIdx] = { key, text };
+  STATE.questionIdx++;
+  setTimeout(() => renderQuestion(), 300);
+}
+
+function goPrevStep() {
+  if (STATE.questionIdx > 0) {
+    STATE.questionIdx--;
+    STATE.userAnswers.pop();
+    renderQuestion();
+  }
+}
+
+// ═══ Phase 2: Research ═══
+async function renderPhase2() {
+  buildPhaseBar();
+  main.innerHTML = `<div class="loading"><span class="spinner">🔍</span><p>小P 正在整理资料搜索任务……</p></div>`;
+
+  try {
+    const prompt = `学生选了方向：${STATE.allContext.cats}，并回答了以下问题：
+${STATE.allContext.answers}
+
+请为学生设计一个「资料搜索任务」。要求：
+1. 给 5 个搜索关键词（让学生去百度或浏览器里搜）
+2. 给 2-3 个参考网站链接（真实的、适合学生查阅资料的网站）
+3. 写一个简短的任务说明，告诉学生该搜什么、关注哪些数据和事实
+
+格式：
+[任务说明]
+一句话任务说明
+
+[搜索关键词]
+关键词1, 关键词2, 关键词3, 关键词4, 关键词5
+
+[参考链接]
+链接1描述：URL
+链接2描述：URL
+
+注意：链接要是真实的、可以访问的网站。`;
+
+    const result = await callAI(prompt);
+    STATE.researchData = parseResearch(result);
+    renderResearchUI();
+  } catch (e) {
+    main.innerHTML = `<div class="msg msg-ai"><div class="avatar">😢</div><div class="bubble">生成失败：${e.message}<br>${btn('🔄 重试', 'btn-outline', 'renderPhase2()')}</div></div>`;
+  }
+}
+
+function parseResearch(text) {
+  const taskM = text.match(/\[任务说明\]\s*([\s\S]*?)(?=\[搜索|$)/i);
+  const kwM = text.match(/\[搜索关键词\]\s*([\s\S]*?)(?=\[参考|$)/i);
+  const linkM = text.match(/\[参考链接\]\s*([\s\S]*?)$/i);
+  return {
+    task: taskM ? taskM[1].trim() : '请搜索相关资料',
+    keywords: kwM ? kwM[1].split(/[,，\n]/).map(k => k.trim()).filter(k => k) : [],
+    links: linkM ? linkM[1].trim() : ''
+  };
+}
+
+function renderResearchUI() {
+  buildPhaseBar();
+  const rd = STATE.researchData;
+  main.innerHTML = `
+    <div class="msg msg-ai">
+      <div class="avatar">🤖</div>
+      <div class="bubble">
+        <strong>第二步：自己去搜一搜</strong><br>
+        一个好的产品经理不会凭空想象，他会花时间去了解真实情况。<br>
+        请你用下面的关键词去百度搜索，把找到的<strong>数据、案例、痛点</strong>粘贴到下方。
+      </div>
+    </div>
+    <div class="research-block">
+      <h3>📌 搜索任务</h3>
+      <p style="font-size:14px;margin-bottom:12px;">${rd.task}</p>
+      <h3>🔑 搜索关键词</h3>
+      <p>${rd.keywords.map(k => `<span class="kw">${k}</span>`).join(' ')}</p>
+      ${rd.links ? `<h3 style="margin-top:12px;">🌐 参考链接</h3><p>${rd.links.split('\n').map(l => `<span class="link">${l}</span>`).join('<br>')}</p>` : ''}
+    </div>
+    <textarea class="text-input" id="researchInput" placeholder="把你搜索到的数据、案例、你的想法粘贴在这里……&#10;&#10;例如：&#10;- 中国每年浪费粮食约3500万吨&#10;- 校园里每天大约有30%的食物被倒掉&#10;- 有调查显示70%的学生愿意参与环保行动……"></textarea>
+    <div class="btn-group">
+      ${btn('← 返回上一步', 'btn-outline', 'backToPhase1()')}
+      ${btn('✅ 粘贴好了，继续', 'btn-primary', 'confirmResearch()')}
+    </div>
+  `;
+}
+
+function backToPhase1() {
+  STATE.questionIdx = STATE.questions.length - 1;
+  STATE.userAnswers.pop();
+  STATE.phase = 1;
+  renderQuestion();
+}
+
+function confirmResearch() {
+  STATE.researchNotes = document.getElementById('researchInput').value.trim();
+  STATE.allContext.research = STATE.researchNotes;
+  STATE.phase = 3;
+  renderPhase3();
+}
+
+// ═══ Phase 3: Feature questions ═══
+async function renderPhase3() {
+  buildPhaseBar();
+  main.innerHTML = `<div class="loading"><span class="spinner">⚙️</span><p>小P 根据你的调研结果生成功能选项……</p></div>`;
+
+  try {
+    const prompt = `学生选了方向「${STATE.allContext.cats}」，经过思考后回答了以下问题：
+${STATE.allContext.answers}
+
+学生搜索到的资料/数据/痛点：
+${STATE.researchNotes || '（学生未粘贴搜索资料）'}
+
+请根据以上所有信息，为学生设计功能相关的选择题。这个产品应该是网页应用，适合小/初中生使用。
+
+请生成以下题目：
+
+1. 【功能选择题】给出 6-8 个功能建议（标注 P0/P1/P2 优先级），让学生勾选想要的功能。P0 必须有（最多3个），P1 应该有，P2 可选。用 checkbox（可多选）格式。
+
+2. 【核心问题确认题】根据资料和思考，你认为学生最想解决的核心问题是什么？给 3 个选项，让学生选一个。
+
+格式严格如下：
+
+[功能选择题]
+[P0] 功能名：一句话描述
+[P1] 功能名：一句话描述
+...
+
+[核心问题确认题] 你认为这个产品最核心要解决的问题是什么？
+A：描述
+B：描述
+C：描述
+
+注意：[功能选择题] 和 [核心问题确认题] 的标签必须原样保留，方便解析。`;
+
+    const result = await callAI(prompt);
+    STATE.featureData = parseFeaturePhase(result);
+    STATE.phase = 3;
+    renderFeatureUI();
+  } catch (e) {
+    main.innerHTML = `<div class="msg msg-ai"><div class="avatar">😢</div><div class="bubble">生成失败：${e.message}<br>${btn('🔄 重试', 'btn-outline', 'renderPhase3()')}</div></div>`;
+  }
+}
+
+function parseFeaturePhase(text) {
+  const featM = text.match(/\[功能选择题\]([\s\S]*?)(?=\[核心|$)/i);
+  const coreM = text.match(/\[核心问题确认题\]([\s\S]*?)$/i);
+  const features = [];
+  if (featM) {
+    const lines = featM[1].split('\n');
+    for (const l of lines) {
+      const fm = l.match(/^\s*\[(P\d)\]\s*(.+)$/i);
+      if (fm) features.push({ priority: fm[1], text: fm[2].trim() });
+    }
+  }
+  const coreOpts = [];
+  if (coreM) {
+    const lines = coreM[1].split('\n');
+    for (const l of lines) {
+      const cm = l.match(/^([A-C])[\.\、\s：:]*\s*(.+)/);
+      if (cm) coreOpts.push({ key: cm[1], text: cm[2].trim() });
+    }
+  }
+  return { features, coreOpts };
+}
+
+function renderFeatureUI() {
+  buildPhaseBar();
+  const fd = STATE.featureData;
+  // Store for multi-select
+  window._featData = fd.features;
+  window._selFeat = new Set();
+
+  main.innerHTML = `
+    <div class="msg msg-ai">
+      <div class="avatar">🤖</div>
+      <div class="bubble">
+        <strong>第三步：基于你的调研，设计功能</strong><br>
+        下面是根据你的资料搜索和分析结果生成的功能建议。请勾选你想要的功能，也可以自己添加。
+      </div>
+    </div>
+    <h3 style="margin:16px 0 10px;">🔧 功能选择（可多选）</h3>
+    <div class="check-list">${fd.features.map((f, i) => `
+      <div class="check-item" onclick="toggleFeat(${i}, this)">
+        <div class="check-box"></div>
+        <div class="check-label"><span class="pri">[${f.priority}]</span> ${f.text}</div>
+      </div>
+    `).join('')}</div>
+    <div style="margin-top:10px;">${btn('+ 自己添加功能', 'btn-outline', 'addCustomFeature()', false)}</div>
+    <div id="customFeatures"></div>
+    <h3 style="margin:20px 0 10px;">🎯 你认为核心要解决的问题是？</h3>
+    <div class="choice-list">${fd.coreOpts.map(o => `
+      <div class="choice-card" onclick="selectCore('${o.key}','${o.text.replace(/'/g,"\\'")}')">
+        <div class="choice-dot"></div>
+        <div class="choice-text"><strong>${o.key}.</strong> ${o.text}</div>
+      </div>
+    `).join('')}</div>
+    <div class="btn-group">
+      ${btn('← 返回修改资料', 'btn-outline', 'backToResearch()')}
+      ${btn('✅ 确认，生成 PRD', 'btn-primary', 'confirmFeatures()')}
+    </div>
+  `;
+}
+
+function toggleFeat(i, el) {
+  if (window._selFeat.has(i)) { window._selFeat.delete(i); el.classList.remove('selected'); }
+  else { window._selFeat.add(i); el.classList.add('selected'); }
+}
+
+let customFeatCount = 0;
+function addCustomFeature() {
+  const d = document.createElement('div');
+  d.style.cssText = 'margin-top:8px;display:flex;gap:8px;';
+  d.innerHTML = `<input type="text" class="text-input" style="min-height:auto;flex:1;margin-top:0;" placeholder="自定义功能名称"><select style="padding:8px;border-radius:8px;border:2px solid #e8e8e8;font-family:inherit;"><option>P0</option><option selected>P1</option><option>P2</option></select><button class="btn btn-outline btn-small" onclick="this.parentElement.remove()">✕</button>`;
+  document.getElementById('customFeatures').appendChild(d);
+  customFeatCount++;
+}
+
+function selectCore(key, text) {
+  STATE.coreAnswer = { key, text };
+  document.querySelectorAll('.choice-card').forEach(c => {
+    c.classList.remove('selected');
+    c.querySelector('.choice-dot').textContent = '';
+  });
+}
+function backToResearch() { STATE.phase = 2; renderResearchUI(); }
+
+function confirmFeatures() {
+  // Collect custom features
+  const customInputs = document.querySelectorAll('#customFeatures input[type="text"]');
+  const customSel = document.querySelectorAll('#customFeatures select');
+  const customFeats = [];
+  for (let i = 0; i < customInputs.length; i++) {
+    if (customInputs[i].value.trim()) {
+      customFeats.push({ priority: customSel[i]?.value || 'P1', text: customInputs[i].value.trim() });
+    }
+  }
+  // Collect selected AI features
+  const selFeats = [];
+  window._selFeat.forEach(i => selFeats.push(window._featData[i]));
+  const allFeats = [...selFeats, ...customFeats];
+  if (allFeats.length === 0) { showToast('请至少选一个功能'); return; }
+  STATE.selectedFeatures = allFeats;
+  STATE.allContext.features = allFeats.map(f => `[${f.priority}] ${f.text}`).join('\n');
+  STATE.allContext.coreAnswer = STATE.coreAnswer?.text || '';
+  STATE.phase = 4;
+  renderPhase4();
+}
+
+// ═══ Phase 4: Generate PRD ═══
+async function renderPhase4() {
+  buildPhaseBar();
+  main.innerHTML = `<div class="loading"><span class="spinner">📝</span><p>小P 正在根据你的所有思考生成 PRD 文档……</p></div>`;
+
+  try {
+    const prompt = `你是一位资深产品经理。请根据以下信息，生成一份完整的产品需求文档（PRD）。
+
+【方向】${STATE.allContext.cats}
+【思考与回答】${STATE.allContext.answers}
+【调研资料】${STATE.allContext.research || '（无）'}
+【核心问题】${STATE.allContext.coreAnswer || '（无）'}
+【选定功能】${STATE.allContext.features || '（无）'}
+
+这是一款面向小/初中生的网页应用。请生成标准 PRD：
+
+## 产品概述
+## 用户画像与使用场景
+## 功能需求（按 P0/P1/P2 排列）
+## 核心用户流程
+## 非功能性需求
+
+使用 Markdown 格式，中文输出，用数据说话。`;
+
+    const result = await callAI(prompt, MODEL_PRO);
+    STATE.prdText = result;
+    renderPRDResult();
+  } catch (e) {
+    main.innerHTML = `<div class="msg msg-ai"><div class="avatar">😢</div><div class="bubble">生成 PRD 失败：${e.message}<br>${btn('🔄 重试', 'btn-outline', 'renderPhase4()')}</div></div>`;
+  }
+}
+
+function renderPRDResult() {
+  buildPhaseBar();
+  main.innerHTML = `
+    <div class="msg msg-ai">
+      <div class="avatar">📝</div>
+      <div class="bubble"><strong>PRD 文档已生成！</strong><br>下面是你基于深度思考产出的产品需求文档。</div>
+    </div>
+    <div class="result-block">
+      <div class="body">${marked.parse(STATE.prdText)}</div>
+      <div style="margin-top:14px;">${btn('📋 复制 PRD', 'btn-copy btn-small', 'copyText(STATE.prdText, this)')}</div>
+    </div>
+    <div class="btn-group">
+      ${btn('← 返回修改', 'btn-outline', 'backToFeatures()')}
+      ${btn('🚀 生成技术方案', 'btn-primary', 'renderPhase5()')}
+    </div>
+  `;
+}
+
+function backToFeatures() { STATE.phase = 3; renderFeatureUI(); }
+
+// ═══ Phase 5: Generate Tech Spec ═══
+async function renderPhase5() {
+  STATE.phase = 5;
+  buildPhaseBar();
+  if (!STATE.prdText) { renderPhase4(); return; }
+  main.innerHTML = `<div class="loading"><span class="spinner">🚀</span><p>小P 正在生成技术方案……</p></div>`;
+
+  try {
+    const prompt = `你是一位全栈技术架构师。请根据以下 PRD，生成技术规格文档。
+
+PRD 内容：
+${STATE.prdText}
+
+请按模块输出：
+
+## 模块一：产品概述
+## 模块二：前端技术规格（技术栈、页面、组件、路由）
+## 模块三：后端 API 设计（接口列表、认证、错误处理）
+## 模块四：数据库设计（表结构、选型理由）
+## 模块五：部署与运维
+
+使用 Markdown 格式，中文输出，代码用中文注释，技术选型简单实用（教学场景）。`;
+
+    const result = await callAI(prompt, MODEL_PRO);
+    STATE.techText = result;
+    renderTechResult();
+  } catch (e) {
+    main.innerHTML = `<div class="msg msg-ai"><div class="avatar">😢</div><div class="bubble">生成失败：${e.message}<br>${btn('🔄 重试', 'btn-outline', 'renderPhase5()')}</div></div>`;
+  }
+}
+
+function renderTechResult() {
+  buildPhaseBar();
+  const icons = { '产品概述':'📋','前端技术规格':'📱','后端 API 设计':'⚙️','数据库设计':'🗄️','部署与运维':'🚀' };
+  const modules = [];
+  const regex = /##\s*模块[一二三四五\d]*[：:]\s*(.+?)\n/;
+  let pos = 0, t = STATE.techText;
+  while (true) {
+    const m = regex.exec(t.slice(pos));
+    if (!m) break;
+    const s = pos + m.index, name = m[1].trim();
+    const nm = regex.exec(t.slice(s + m[0].length));
+    const end = nm ? s + m[0].length + nm.index : t.length;
+    modules.push({ name, content: t.slice(s + m[0].length, end).trim() });
+    pos = end;
+  }
+  if (modules.length === 0) modules.push({ name: '技术方案', content: t });
+
+  main.innerHTML = `
+    <div class="msg msg-ai">
+      <div class="avatar">🎉</div>
+      <div class="bubble"><strong>技术方案已生成！</strong><br>以下每个模块可独立复制，直接给 AI 编程工具使用。</div>
+    </div>
+    <div class="btn-group">
+      ${btn('📋 一键复制全部', 'btn-copy', 'copyAllTech()')}
+      ${btn('← 返回 PRD', 'btn-outline', 'renderPRDResult()')}
+      ${btn('🔄 重新开始', 'btn-outline', 'resetAll()')}
+    </div>
+    ${modules.map((m,i) => `
+      <div class="result-block">
+        <h2>${icons[m.name]||'📄'} ${m.name}</h2>
+        <div class="body">${marked.parse(m.content)}</div>
+        ${btn('📋 复制', 'btn-copy btn-small', `copyModule(${i}, this)`, false)}
+      </div>
+    `).join('')}
+  `;
+  window._teModules = modules;
+}
+
+async function copyModule(i, btn) {
+  await copyToClipboard(window._teModules[i].content);
+  btn.textContent = '✅ 已复制'; setTimeout(() => btn.textContent = '📋 复制', 2000);
+}
+async function copyAllTech() {
+  await copyToClipboard(window._teModules.map(m => `## ${m.name}\n\n${m.content}`).join('\n\n---\n\n'));
+  showToast('✅ 已复制！');
+}
+async function copyText(text, btn) {
+  await copyToClipboard(text);
+  if (btn) { btn.textContent = '✅ 已复制'; setTimeout(() => btn.textContent = '📋 复制', 2000); }
+}
+async function copyToClipboard(text) {
+  try { await navigator.clipboard.writeText(text); }
+  catch { const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
+}
+
+// ═══ API Key Modal ═══
+function showApiModal() {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:20px;padding:28px;max-width:440px;width:100%;text-align:center;position:relative;">
+      <button onclick="this.parentElement.parentElement.remove()" style="position:absolute;top:12px;right:16px;width:28px;height:28px;border-radius:50%;border:none;background:#f0f0f0;font-size:14px;cursor:pointer;">✕</button>
+      <div style="font-size:40px;margin-bottom:10px;">🔑</div>
+      <h2>配置 API Key</h2>
+      <p style="font-size:13px;color:#636e72;margin:8px 0 16px;">去 platform.deepseek.com 获取 Key</p>
+      <input type="password" id="apiKeyModalInput" placeholder="sk-xxxxxxxx" style="width:100%;padding:12px;border:2px solid #e8e8e8;border-radius:12px;font-size:14px;font-family:monospace;margin-bottom:12px;">
+      <p id="apiErr" style="color:#ff6b6b;font-size:12px;margin-bottom:8px;display:none;">Key 格式不正确</p>
+      <button class="btn btn-primary" onclick="saveApiKey()">保存并继续</button>
+      <p style="font-size:11px;color:#aaa;margin-top:8px;">仅保存在你当前浏览器中</p>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function saveApiKey() {
+  const input = document.getElementById('apiKeyModalInput');
+  const val = input.value.trim();
+  if (!val.startsWith('sk-')) { document.getElementById('apiErr').style.display = 'block'; return; }
+  setApiKey(val);
+  document.querySelector('[style*="z-index:9999"]')?.remove();
+  showToast('✅ 已保存');
+  if (STATE.phase === 1) renderPhase1Start();
+}
+
+// ═══ Reset ═══
+function resetAll() {
+  STATE.phase = 0; STATE.cats = []; STATE.userAnswers = []; STATE.researchNotes = '';
+  STATE.selectedFeatures = []; STATE.prdText = ''; STATE.techText = ''; STATE.allContext = {};
+  STATE.questions = []; STATE.questionIdx = 0; STATE.coreAnswer = null;
+  window._featData = []; window._selFeat = new Set(); window._teModules = [];
+  renderPhase0();
+}
+
+// ═══ Start ═══
+renderPhase0();
+</script>
+</body>
+</html>
