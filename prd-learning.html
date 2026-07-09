@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRD 学习工坊 - 跟小P学产品</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --pink: #ff6b9d;
+  --purple: #c471ed;
+  --blue: #667eea;
+  --teal: #12c2e9;
+  --orange: #f5af19;
+  --green: #43e97b;
+  --red: #ff6b6b;
+  --bg: #fef9ff;
+  --card: #ffffff;
+  --text: #2d3436;
+  --text-light: #636e72;
+  --shadow: 0 4px 24px rgba(149, 117, 205, 0.15);
+  --shadow-hover: 0 8px 32px rgba(149, 117, 205, 0.25);
+  --radius: 20px;
+  --radius-sm: 12px;
+  --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: linear-gradient(135deg, #fef9ff 0%, #f0e6ff 30%, #e8f4fd 60%, #fef9ff 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.bg-blob {
+  position: fixed; border-radius: 50%; filter: blur(80px);
+  opacity: 0.4; z-index: 0; pointer-events: none;
+}
+.bg-blob-1 { width: 400px; height: 400px; background: #ff6b9d33; top: -100px; right: -100px; }
+.bg-blob-2 { width: 350px; height: 350px; background: #667eea33; bottom: -80px; left: -80px; }
+.bg-blob-3 { width: 250px; height: 250px; background: #12c2e933; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
+.container { max-width: 800px; margin: 0 auto; padding: 24px 20px 60px; position: relative; z-index: 1; }
+
+.header { text-align: center; padding: 40px 0 20px; }
+.header .icon { font-size: 56px; margin-bottom: 8px; display: block; animation: bounce 2s infinite; }
+.header h1 {
+  font-size: 32px; font-weight: 800;
+  background: linear-gradient(135deg, var(--pink), var(--purple), var(--blue));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  margin-bottom: 6px;
+}
+.header .subtitle { color: var(--text-light); font-size: 15px; }
+.header-bar { margin-top: 12px; }
+.btn-key {
+  background: white; color: var(--orange); border: 2px solid var(--orange);
+  padding: 6px 16px; font-size: 13px; font-weight: 600;
+}
+.btn-key:hover { background: #fff8f0; }
+.btn-key.has-key { background: #f0fdf4; color: var(--green); border-color: var(--green); }
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.progress-wrap {
+  background: var(--card); border-radius: var(--radius);
+  padding: 20px 28px; box-shadow: var(--shadow); margin-bottom: 24px; overflow-x: auto;
+}
+.progress-steps { display: flex; justify-content: space-between; position: relative; min-width: 440px; }
+.progress-steps::before {
+  content: ''; position: absolute; top: 18px; left: 24px; right: 24px;
+  height: 4px; background: #e8e8e8; border-radius: 2px; z-index: 0;
+}
+.progress-fill {
+  position: absolute; top: 18px; left: 24px; height: 4px;
+  background: linear-gradient(90deg, var(--pink), var(--purple));
+  border-radius: 2px; z-index: 1; transition: width 0.5s ease;
+}
+.step-dot { display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 2; cursor: pointer; position: relative; flex-shrink: 0; }
+.step-circle {
+  width: 40px; height: 40px; border-radius: 50%; background: #e8e8e8;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; transition: all var(--transition); border: 3px solid transparent;
+}
+.step-dot.active .step-circle {
+  background: linear-gradient(135deg, var(--pink), var(--purple));
+  color: white; box-shadow: 0 4px 16px rgba(255, 107, 157, 0.35); transform: scale(1.1);
+}
+.step-dot.done .step-circle { background: var(--green); color: white; border-color: transparent; }
+.step-label { font-size: 11px; color: var(--text-light); text-align: center; max-width: 64px; line-height: 1.3; font-weight: 500; }
+.step-dot.active .step-label { color: var(--pink); font-weight: 700; }
+.step-dot.done .step-label { color: var(--green); }
+
+.main-card {
+  background: var(--card); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 36px 32px; min-height: 420px; transition: all var(--transition);
+}
+
+.step-content { display: none; }
+.step-content.active { display: block; animation: fadeSlideIn 0.4s ease; }
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.step-header .step-icon { font-size: 36px; line-height: 1; }
+.step-header h2 { font-size: 22px; font-weight: 700; color: var(--text); }
+.step-header h2 span { font-size: 14px; font-weight: 500; color: var(--pink); margin-left: 8px; }
+
+.knowledge-box {
+  background: linear-gradient(135deg, #fef3f8, #f3e8ff);
+  border-radius: var(--radius-sm); padding: 16px 20px; margin: 16px 0 20px;
+  border-left: 4px solid var(--pink);
+}
+.knowledge-box .kb-title { font-weight: 700; font-size: 14px; color: var(--pink); margin-bottom: 6px; }
+.knowledge-box p { font-size: 14px; color: var(--text-light); line-height: 1.7; }
+
+/* ─── Category Selector ─── */
+.category-section { margin: 20px 0; }
+.category-section .cat-title {
+  font-size: 15px; font-weight: 700; color: var(--text);
+  margin-bottom: 6px; display: flex; align-items: center; gap: 6px;
+}
+.category-section .cat-desc {
+  font-size: 13px; color: var(--text-light); margin-bottom: 14px;
+}
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+}
+.cat-card {
+  background: #fafafa; border: 2px solid #e8e8e8; border-radius: 14px;
+  padding: 14px 10px; cursor: pointer; text-align: center;
+  transition: all var(--transition); position: relative;
+}
+.cat-card:hover { border-color: var(--purple); transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+.cat-card.selected {
+  border-color: var(--purple); background: #f3e8ff;
+  box-shadow: 0 0 0 3px rgba(196, 113, 237, 0.15);
+}
+.cat-card.disabled {
+  opacity: 0.4; cursor: not-allowed; pointer-events: none;
+  border-color: #e8e8e8; background: #fafafa; transform: none; box-shadow: none;
+}
+.cat-card .cat-icon { font-size: 28px; margin-bottom: 6px; display: block; }
+.cat-card .cat-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.cat-card .cat-badge {
+  position: absolute; top: 8px; right: 8px; width: 22px; height: 22px;
+  border-radius: 50%; background: var(--purple); color: white;
+  font-size: 11px; display: none; align-items: center; justify-content: center;
+}
+.cat-card.selected .cat-badge { display: flex; }
+.cat-counter {
+  text-align: center; font-size: 13px; color: var(--text-light); margin-bottom: 12px;
+}
+.cat-counter strong { color: var(--purple); }
+
+/* ─── AI 生成区 ─── */
+.ai-gen-section {
+  display: none;
+  background: linear-gradient(135deg, #fff3e8, #fef3f8);
+  border-radius: var(--radius-sm); padding: 20px;
+  margin: 16px 0 20px; border: 2px dashed #ffd699; text-align: center;
+}
+.ai-gen-section.show { display: block; }
+.ai-gen-section .ai-gen-title { font-weight: 700; font-size: 15px; color: var(--text); margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.ai-gen-section .ai-gen-desc { font-size: 13px; color: var(--text-light); margin-bottom: 12px; }
+
+/* Radio */
+.radio-options-wrap { margin: 0; }
+.radio-options-wrap .ro-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.radio-options-list { display: flex; flex-direction: column; gap: 8px; }
+.radio-option-item {
+  background: #fafafa; border: 2px solid #e8e8e8; border-radius: 12px;
+  padding: 12px 16px; cursor: pointer; transition: all var(--transition);
+  display: flex; align-items: flex-start; gap: 12px;
+}
+.radio-option-item:hover { border-color: var(--purple); background: #f3e8ff; }
+.radio-option-item.selected { border-color: var(--purple); background: #f3e8ff; box-shadow: 0 0 0 3px rgba(196, 113, 237, 0.15); }
+.radio-option-item .radio-circle {
+  width: 22px; height: 22px; border-radius: 50%; border: 2px solid #ccc; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: white; transition: all var(--transition); margin-top: 2px;
+}
+.radio-option-item.selected .radio-circle { background: var(--purple); border-color: var(--purple); }
+.radio-option-item .radio-text { font-size: 14px; color: var(--text); line-height: 1.6; white-space: pre-wrap; text-align: left; }
+
+/* Form */
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px; color: var(--text); }
+.form-group label .hint { font-weight: 400; color: var(--text-light); font-size: 12px; margin-left: 4px; }
+.form-group input, .form-group textarea, .form-group select {
+  width: 100%; padding: 12px 16px; border: 2px solid #e8e8e8; border-radius: var(--radius-sm);
+  font-size: 14px; font-family: inherit; color: var(--text); background: #fafafa; transition: all var(--transition); resize: vertical;
+}
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+  outline: none; border-color: var(--purple); background: white; box-shadow: 0 0 0 4px rgba(196, 113, 237, 0.1);
+}
+.form-group textarea { min-height: 100px; }
+
+/* Feature */
+.feature-list { display: flex; flex-direction: column; gap: 12px; }
+.feature-item { display: flex; gap: 10px; align-items: flex-start; }
+.feature-item input {
+  flex: 1; padding: 10px 14px; border: 2px solid #e8e8e8; border-radius: var(--radius-sm);
+  font-size: 14px; font-family: inherit; background: #fafafa; transition: all var(--transition);
+}
+.feature-item input:focus { outline: none; border-color: var(--purple); background: white; box-shadow: 0 0 0 4px rgba(196, 113, 237, 0.1); }
+.feature-item select { width: 100px; padding: 10px 12px; border: 2px solid #e8e8e8; border-radius: var(--radius-sm); font-size: 13px; font-family: inherit; background: #fafafa; }
+.feature-item .btn-remove {
+  width: 38px; height: 38px; border-radius: 50%; border: none;
+  background: #ffe0e0; color: #e74c3c; font-size: 16px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all var(--transition);
+}
+.feature-item .btn-remove:hover { background: #ffcccc; transform: scale(1.1); }
+
+/* Feature multi-select */
+.feature-sets-wrap { margin: 16px 0; display: none; }
+.feature-sets-wrap.show { display: block; }
+.fs-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.fs-set { background: #fafafa; border: 2px solid #e8e8e8; border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; transition: all var(--transition); }
+.fs-set:hover { border-color: #ddd; }
+.fs-set-header { font-weight: 700; font-size: 14px; color: var(--purple); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.fs-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; cursor: pointer; transition: all var(--transition); border-radius: 8px; padding: 6px 10px; }
+.fs-item:hover { background: #f3e8ff; }
+.fs-item.selected { background: #e8d5ff; }
+.fs-check { width: 20px; height: 20px; border-radius: 5px; border: 2px solid #ccc; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: white; transition: all var(--transition); margin-top: 2px; }
+.fs-item.selected .fs-check { background: var(--purple); border-color: var(--purple); }
+.fs-text { font-size: 14px; color: var(--text); line-height: 1.6; flex: 1; }
+.fs-text .fs-priority { color: var(--purple); font-weight: 600; margin-right: 4px; }
+.fs-add-btn { margin-top: 12px; text-align: center; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 12px 28px; border-radius: 50px; font-size: 15px;
+  font-weight: 600; border: none; cursor: pointer; transition: all var(--transition); font-family: inherit;
+}
+.btn-primary { background: linear-gradient(135deg, var(--pink), var(--purple)); color: white; box-shadow: 0 4px 16px rgba(255, 107, 157, 0.3); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(255, 107, 157, 0.4); }
+.btn-secondary { background: white; color: var(--purple); border: 2px solid var(--purple); }
+.btn-secondary:hover { background: #f3e8ff; transform: translateY(-1px); }
+.btn-outline { background: white; color: var(--pink); border: 2px solid #f0d0e0; font-size: 13px; padding: 8px 18px; }
+.btn-outline:hover { background: #fef3f8; }
+.btn-small { padding: 6px 16px; font-size: 13px; }
+.btn-copy { background: linear-gradient(135deg, var(--teal), var(--blue)); color: white; padding: 8px 20px; font-size: 13px; box-shadow: 0 2px 10px rgba(18, 194, 233, 0.2); }
+.btn-copy:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(18, 194, 233, 0.35); }
+.btn-copy.copied { background: linear-gradient(135deg, var(--green), #11998e); }
+.btn-ai { background: linear-gradient(135deg, var(--orange), #ff6b6b); color: white; padding: 10px 20px; font-size: 14px; box-shadow: 0 2px 10px rgba(245, 175, 25, 0.25); }
+.btn-ai:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(245, 175, 25, 0.35); }
+.btn-ai.loading { opacity: 0.7; pointer-events: none; }
+.btn-edit { background: linear-gradient(135deg, var(--teal), var(--blue)); color: white; padding: 8px 20px; font-size: 13px; }
+
+.btn-group { display: flex; justify-content: space-between; margin-top: 28px; gap: 12px; }
+.btn-group.right { justify-content: flex-end; }
+.btn-group.center { justify-content: center; }
+
+/* Result */
+.result-header { text-align: center; padding: 20px 0; }
+.result-header .celebration { font-size: 64px; animation: bounce 0.6s ease infinite alternate; }
+.result-header h2 { font-size: 24px; font-weight: 800; background: linear-gradient(135deg, var(--pink), var(--orange)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+.loading-screen { text-align: center; padding: 60px 20px; }
+.loading-screen .loading-icon { font-size: 48px; animation: spin 1.5s linear infinite; display: block; margin-bottom: 16px; }
+.loading-screen h3 { font-size: 18px; color: var(--text); margin-bottom: 8px; }
+.loading-screen p { color: var(--text-light); font-size: 14px; }
+
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+.module-card { background: #fafafa; border-radius: var(--radius-sm); padding: 20px; margin-bottom: 16px; border: 2px solid #f0f0f0; transition: all var(--transition); }
+.module-card:hover { border-color: var(--purple); box-shadow: var(--shadow-hover); }
+.module-card .module-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+.module-card .module-title { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+.module-card .module-body { font-size: 14px; line-height: 1.8; color: var(--text); }
+.module-card .module-body h1, .module-card .module-body h2, .module-card .module-body h3 { margin: 14px 0 8px; }
+.module-card .module-body h1 { font-size: 18px; color: var(--purple); }
+.module-card .module-body h2 { font-size: 16px; color: var(--purple); }
+.module-card .module-body h3 { font-size: 15px; color: var(--text); }
+.module-card .module-body p { margin: 8px 0; }
+.module-card .module-body ul, .module-card .module-body ol { margin: 8px 0 8px 20px; }
+.module-card .module-body li { margin: 4px 0; }
+.module-card .module-body code { background: #2d3436; color: #dfe6e9; padding: 2px 6px; border-radius: 4px; font-family: "SF Mono", "Fira Code", Consolas, monospace; font-size: 13px; }
+.module-card .module-body pre { background: #2d3436; color: #dfe6e9; padding: 14px 16px; border-radius: 10px; overflow-x: auto; font-family: "SF Mono", "Fira Code", Consolas, monospace; font-size: 13px; line-height: 1.6; margin: 10px 0; }
+.module-card .module-body pre code { background: none; color: inherit; padding: 0; }
+.module-card .module-body table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13px; }
+.module-card .module-body th, .module-card .module-body td { border: 1px solid #e0e0e0; padding: 8px 10px; text-align: left; }
+.module-card .module-body th { background: #f5f5f5; font-weight: 600; }
+.module-card .module-body blockquote { border-left: 3px solid var(--purple); padding-left: 12px; margin: 8px 0; color: var(--text-light); }
+
+/* Toast */
+.copy-toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #2d3436; color: white; padding: 12px 28px; border-radius: 50px; font-size: 14px; font-weight: 600; z-index: 1000; animation: toastIn 0.3s ease, toastOut 0.3s ease 1.5s forwards; pointer-events: none; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+@keyframes toastOut { from { opacity: 1; transform: translateX(-50%) translateY(0); } to { opacity: 0; transform: translateX(-50%) translateY(-20px); } }
+
+/* Review */
+/* ─── API Key Modal ─── */
+.api-modal-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5);
+  z-index: 9999; display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.api-modal { background: white; border-radius: 20px; padding: 32px 28px; max-width: 480px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.2); text-align: center; position: relative; }
+.api-modal .am-close { position: absolute; top: 14px; right: 16px; width: 32px; height: 32px; border-radius: 50%; border: none; background: #f0f0f0; color: #888; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.api-modal .am-close:hover { background: #e0e0e0; color: #333; }
+.api-modal .am-icon { font-size: 48px; margin-bottom: 12px; }
+.api-modal h2 { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+.api-modal .am-desc { font-size: 14px; color: var(--text-light); margin-bottom: 20px; line-height: 1.6; }
+.api-modal .am-steps { text-align: left; font-size: 13px; color: var(--text-light); margin-bottom: 16px; padding: 12px 16px; background: #fafafa; border-radius: 10px; line-height: 1.8; }
+.api-modal .am-steps code { background: #2d3436; color: #dfe6e9; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+.api-modal input {
+  width: 100%; padding: 14px 16px; border: 2px solid #e8e8e8; border-radius: 12px;
+  font-size: 14px; font-family: "SF Mono", "Fira Code", Consolas, monospace;
+  margin-bottom: 16px; transition: all var(--transition);
+}
+.api-modal input:focus { outline: none; border-color: var(--purple); box-shadow: 0 0 0 4px rgba(196,113,237,0.1); }
+.api-modal .am-save { margin-bottom: 10px; }
+.api-modal .am-hint { font-size: 12px; color: var(--text-light); }
+.api-modal .am-error { font-size: 13px; color: var(--red); margin-bottom: 10px; display: none; }
+
+/* ─── Review ─── */
+.review-section { background: #fafafa; border-radius: var(--radius-sm); padding: 20px; margin: 16px 0; border: 2px solid #f0f0f0; }
+.review-section h3 { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 12px; }
+.review-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.review-row { display: flex; flex-direction: column; gap: 4px; }
+.review-row .review-label { font-size: 12px; color: var(--text-light); font-weight: 600; }
+.review-row .review-value { font-size: 14px; color: var(--text); background: white; padding: 10px 14px; border-radius: 8px; border: 1px solid #e8e8e8; min-height: 40px; }
+.review-row .review-value.editable { border: 2px solid var(--purple); background: white; padding: 10px 14px; border-radius: 8px; font-size: 14px; font-family: inherit; color: var(--text); resize: vertical; min-height: 60px; width: 100%; }
+.review-row .review-value.editable:focus { outline: none; box-shadow: 0 0 0 3px rgba(196, 113, 237, 0.15); }
+
+.footer { text-align: center; padding: 40px 0 20px; color: var(--text-light); font-size: 13px; }
+
+@media (max-width: 640px) {
+  .container { padding: 12px; }
+  .main-card { padding: 24px 18px; }
+  .header h1 { font-size: 24px; }
+  .step-circle { width: 34px; height: 34px; font-size: 15px; }
+  .step-label { font-size: 10px; max-width: 50px; }
+  .progress-wrap { padding: 16px 12px; }
+  .header .icon { font-size: 42px; }
+  .cat-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+  .cat-card { padding: 10px 6px; }
+  .cat-card .cat-icon { font-size: 22px; }
+  .cat-card .cat-name { font-size: 11px; }
+}
+</style>
+</head>
+<body>
+
+<!-- API Key Modal -->
+<div class="api-modal-overlay" id="apiModal">
+  <div class="api-modal">
+    <button class="am-close" onclick="document.getElementById('apiModal').style.display='none'">✕</button>
+    <div class="am-icon">🔑</div>
+    <h2>配置 DeepSeek API Key</h2>
+    <p class="am-desc">使用 PRD 学习工坊需要接入 DeepSeek 大模型。请填写你的 API Key：</p>
+    <div class="am-steps">
+      <div>📌 获取方式：</div>
+      <div>1. 打开 <code>platform.deepseek.com</code></div>
+      <div>2. 注册/登录 → API Keys → 创建新的 Key</div>
+      <div>3. 复制 Key 粘贴到下方（格式：<code>sk-...</code>）</div>
+    </div>
+    <input type="password" id="apiKeyInput" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxx">
+    <div class="am-error" id="apiError">⛔ Key 格式不正确，请检查</div>
+    <div class="am-save"><button class="btn btn-primary" onclick="saveApiKeyFromModal()">✓ 保存并开始使用</button></div>
+    <div class="am-hint">Key 仅保存在你当前浏览器中，不会上传到服务器</div>
+  </div>
+</div>
+
+<div class="bg-blob bg-blob-1"></div>
+<div class="bg-blob bg-blob-2"></div>
+<div class="bg-blob bg-blob-3"></div>
+
+<div class="container">
+  <div class="header">
+    <span class="icon">📋</span>
+    <h1>PRD 学习工坊</h1>
+    <p class="subtitle">跟小P一起，四步定义产品 + AI 直接生成技术方案 ✨</p>
+    <div class="header-bar">
+      <button class="btn btn-key" style="margin-right:8px" onclick="window.open('prd-intro.html','_blank')">📖 什么是 PRD？</button>
+      <button class="btn btn-key" id="btnApiKey" onclick="openApiKeyModal()">🔑 <span id="btnApiKeyLabel">配置 AI Key</span></button>
+    </div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-steps">
+      <div class="progress-fill" id="progressFill"></div>
+      <div class="step-dot active" data-step="1"><div class="step-circle">🎯</div><div class="step-label">背景目标</div></div>
+      <div class="step-dot" data-step="2"><div class="step-circle">👤</div><div class="step-label">用户画像</div></div>
+      <div class="step-dot" data-step="3"><div class="step-circle">⚙️</div><div class="step-label">功能需求</div></div>
+      <div class="step-dot" data-step="4"><div class="step-circle">🔄</div><div class="step-label">流程交互</div></div>
+      <div class="step-dot" data-step="5"><div class="step-circle">✨</div><div class="step-label">生成技术方案</div></div>
+    </div>
+  </div>
+
+  <div class="main-card" id="mainCard">
+
+    <!-- ═══ STEP 1: 背景目标（选类别 + AI生成） ═══ -->
+    <div class="step-content active" data-step="1">
+      <div class="step-header">
+        <span class="step-icon">🎯</span>
+        <h2>产品背景与目标 <span>Step 1/4</span></h2>
+      </div>
+      <div class="knowledge-box">
+        <div class="kb-title">💡 这是什么？</div>
+        <p>PRD 的第一部分要回答三个问题：<strong>为什么做</strong>这个产品？<strong>要解决什么问题</strong>？<strong>成功标准是什么</strong>？就像写作文先定主题——方向对了，后面才不会跑偏。</p>
+      </div>
+
+      <!-- 类别选择 -->
+      <div class="category-section">
+        <div class="cat-title">🏷️ 选择你感兴趣的方向</div>
+        <p class="cat-desc">先选 1~2 个感兴趣的类别，AI 会根据你的兴趣推荐创意方案</p>
+        <div class="cat-counter">已选 <strong id="catCount">0</strong> / 2 个类别</div>
+        <div class="cat-grid" id="catGrid"></div>
+        <div style="margin-top:10px;font-size:13px;color:var(--text-light);">
+          有其他感兴趣的方向？<input type="text" id="catCustom" placeholder="自定义类别（可选）" style="width:180px;padding:6px 10px;border:2px solid #e8e8e8;border-radius:8px;font-size:13px;font-family:inherit;margin-left:4px;">
+        </div>
+      </div>
+
+      <!-- 分隔 -->
+      <hr style="border:none;border-top:1px dashed #e0d0f0;margin:8px 0 20px;">
+
+      <!-- AI 生成区 -->
+      <div class="ai-gen-section" id="aiGen1">
+        <div class="ai-gen-title">🤖 基于兴趣生成创意方案</div>
+        <p class="ai-gen-desc" id="aiGen1Desc">请先选择 1~2 个类别</p>
+        <button class="btn btn-ai" onclick="aiGenerateStep1()" id="aiBtn1" disabled>✨ AI 基于我的兴趣生成方案</button>
+        <div class="radio-options-wrap" id="roWrap1" style="display:none;margin-top:16px;text-align:left;">
+          <div class="ro-title">选择一个方案自动填充表单（单选）：</div>
+          <div class="radio-options-list" id="roList1"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>产品名称 <span class="hint">给你的产品起个名字</span></label>
+        <input type="text" id="s1_productName" placeholder="例如：校园二手书交易平台">
+      </div>
+      <div class="form-group">
+        <label>产品类型 <span class="hint">例如：响应式网页应用</span></label>
+        <input type="text" id="s1_productType" value="网页应用">
+      </div>
+      <div class="form-group">
+        <label>核心问题 <span class="hint">这个产品要解决什么痛点？</span></label>
+        <textarea id="s1_problem" placeholder="例如：学生每学期买新教材太贵，旧书卖不掉又占地方，缺少方便的校内二手交易渠道……"></textarea>
+      </div>
+      <div class="form-group">
+        <label>产品目标 <span class="hint">上线后希望达到什么效果？</span></label>
+        <textarea id="s1_goals" placeholder="例如：让全校80%的学生在平台上完成二手书交易，月交易量达到500单以上……"></textarea>
+      </div>
+
+      <div class="btn-group right">
+        <button class="btn btn-primary" onclick="nextStep()">下一步 →</button>
+      </div>
+    </div>
+
+    <!-- ═══ STEP 2: 用户画像 ═══ -->
+    <div class="step-content" data-step="2">
+      <div class="step-header">
+        <span class="step-icon">👤</span>
+        <h2>用户画像与场景 <span>Step 2/4</span></h2>
+      </div>
+      <div class="knowledge-box">
+        <div class="kb-title">💡 这是什么？</div>
+        <p>产品是给人用的！你需要想清楚：<strong>谁会用它</strong>？在<strong>什么情况下</strong>打开你的产品？他们有什么<strong>烦恼</strong>？这一步帮你建立"同理心"——站在用户的角度思考。</p>
+      </div>
+
+      <div class="ai-gen-section" id="aiGen2">
+        <div class="ai-gen-title">🤖 AI 生成用户场景选项</div>
+        <p class="ai-gen-desc">点按钮，AI 帮你生成 3 个完整的用户场景方案，选一个自动填充</p>
+        <button class="btn btn-ai" onclick="aiGenerate(2)" id="aiBtn2">✨ AI 帮我生成选项</button>
+        <div class="radio-options-wrap" id="roWrap2" style="display:none;margin-top:16px;text-align:left;">
+          <div class="ro-title">请选择一个方案（单选）：</div>
+          <div class="radio-options-list" id="roList2"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>目标用户群体 <span class="hint">谁会使用你的产品？</span></label>
+        <textarea id="s2_users" placeholder="例如：&#10;① 大一新生：需要买教材但预算有限&#10;② 大四毕业生：离校前想处理旧书&#10;③ 考研党：需要大量二手参考书……"></textarea>
+      </div>
+      <div class="form-group">
+        <label>使用场景 <span class="hint">用户在什么时间、地点、什么情况下会用？</span></label>
+        <textarea id="s2_scenarios" placeholder="例如：开学第一周，大一新生在宿舍刷手机，想找便宜的《高等数学》教材……"></textarea>
+      </div>
+      <div class="form-group">
+        <label>用户痛点 <span class="hint">用户现在怎么解决这个问题？有什么不方便？</span></label>
+        <textarea id="s2_painPoints" placeholder="例如：目前只能去学校贴吧发帖或者找学长学姐挨个问，效率很低，而且很难比价……"></textarea>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-secondary" onclick="prevStep()">← 上一步</button>
+        <button class="btn btn-primary" onclick="nextStep()">下一步 →</button>
+      </div>
+    </div>
+
+    <!-- ═══ STEP 3: 功能需求 ═══ -->
+    <div class="step-content" data-step="3">
+      <div class="step-header">
+        <span class="step-icon">⚙️</span>
+        <h2>功能需求列表 <span>Step 3/4</span></h2>
+      </div>
+      <div class="knowledge-box">
+        <div class="kb-title">💡 这是什么？</div>
+        <p>产品具体<strong>能做什么</strong>？把想法拆成一个个具体的功能点，并标注优先级。记住：<strong>不是所有功能都要第一版就做</strong>，学会取舍是产品经理的必修课。</p>
+      </div>
+
+      <div class="ai-gen-section" id="aiGen3">
+        <div class="ai-gen-title">🤖 AI 生成功能建议</div>
+        <p class="ai-gen-desc">AI 根据你的产品生成多套功能方案，勾选喜欢的功能添加到列表</p>
+        <button class="btn btn-ai" onclick="aiGenerateFeatures()" id="aiBtn3">✨ AI 帮我生成功能建议</button>
+        <div class="feature-sets-wrap" id="fsWrap3">
+          <div class="fs-title">请勾选想要的功能（可多选），然后点击添加：</div>
+          <div id="fsList3"></div>
+          <div class="fs-add-btn">
+            <button class="btn btn-primary" onclick="addSelectedFeatures()">✓ 添加选中的功能到列表</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>核心功能 <span class="hint">添加产品功能，按优先级排列</span></label>
+        <div class="feature-list" id="featureContainer">
+          <div class="feature-item">
+            <input type="text" class="feature-input" placeholder="功能描述，例如：用户注册和登录">
+            <select class="feature-priority"><option value="P0">P0 必须有</option><option value="P1" selected>P1 应该有</option><option value="P2">P2 锦上添花</option></select>
+            <button class="btn-remove" onclick="removeFeature(this)">✕</button>
+          </div>
+        </div>
+        <button class="btn btn-outline" style="margin-top:12px;" onclick="addFeature()">+ 添加功能</button>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-secondary" onclick="prevStep()">← 上一步</button>
+        <button class="btn btn-primary" onclick="nextStep()">下一步 →</button>
+      </div>
+    </div>
+
+    <!-- ═══ STEP 4: 流程交互 ═══ -->
+    <div class="step-content" data-step="4">
+      <div class="step-header">
+        <span class="step-icon">🔄</span>
+        <h2>用户流程与交互 <span>Step 4/4</span></h2>
+      </div>
+      <div class="knowledge-box">
+        <div class="kb-title">💡 这是什么？</div>
+        <p>描述用户是怎么<strong>一步步操作</strong>的。从"打开产品"到"完成任务"，路径是什么？每一屏看到什么、点哪里、跳到哪里？这一步帮你想清楚产品的<strong>骨架</strong>。</p>
+      </div>
+
+      <div class="ai-gen-section" id="aiGen4">
+        <div class="ai-gen-title">🤖 AI 生成流程方案</div>
+        <p class="ai-gen-desc">AI 会根据你上一步选的功能，生成对应的使用流程</p>
+        <button class="btn btn-ai" onclick="aiGenerateFlow()" id="aiBtn4">✨ AI 根据我的功能生成流程</button>
+        <div class="radio-options-wrap" id="roWrap4" style="display:none;margin-top:16px;text-align:left;">
+          <div class="ro-title">请选择一个方案（单选）：</div>
+          <div class="radio-options-list" id="roList4"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>核心用户流程 <span class="hint">描述用户完成主要任务的操作路径</span></label>
+        <textarea id="s4_flow" placeholder="例如：&#10;1. 用户打开小程序 → 看到首页&#10;2. 点击搜索 → 输入关键词 → 看到结果列表&#10;3. 点击详情 → 查看信息&#10;4. 完成操作 → 返回首页"></textarea>
+      </div>
+      <div class="form-group">
+        <label>关键页面描述 <span class="hint">重要界面长什么样？有哪些元素？</span></label>
+        <textarea id="s4_pages" placeholder="例如：&#10;【首页】顶部搜索栏 + 分类导航 + 内容列表&#10;【详情页】内容展示 + 操作按钮 + 相关信息&#10;【表单页】输入区域 + 提交按钮"></textarea>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-secondary" onclick="prevStep()">← 上一步</button>
+        <button class="btn btn-primary" onclick="goToReview()">✨ 生成技术方案</button>
+      </div>
+    </div>
+
+    <!-- ═══ STEP 5: Review & Generate ═══ -->
+    <div class="step-content" data-step="5">
+      <div id="reviewStep">
+        <div class="result-header">
+          <div class="celebration">🔍</div>
+          <h2>确认你的产品定义</h2>
+          <p style="color:var(--text-light);margin-top:8px;">检查一下所有信息对不对，有问题可以直接编辑修改 ✏️</p>
+        </div>
+
+        <div class="review-section">
+          <h3>🎯 产品背景与目标</h3>
+          <div class="review-grid">
+            <div class="review-row"><span class="review-label">产品名称</span><input class="review-value editable" id="rev_productName"></div>
+            <div class="review-row"><span class="review-label">产品类型</span><input class="review-value editable" id="rev_productType"></div>
+            <div class="review-row"><span class="review-label">核心问题</span><textarea class="review-value editable" id="rev_problem"></textarea></div>
+            <div class="review-row"><span class="review-label">产品目标</span><textarea class="review-value editable" id="rev_goals"></textarea></div>
+          </div>
+        </div>
+
+        <div class="review-section">
+          <h3>👤 用户画像与场景</h3>
+          <div class="review-grid">
+            <div class="review-row"><span class="review-label">目标用户</span><textarea class="review-value editable" id="rev_users"></textarea></div>
+            <div class="review-row"><span class="review-label">使用场景</span><textarea class="review-value editable" id="rev_scenarios"></textarea></div>
+            <div class="review-row"><span class="review-label">用户痛点</span><textarea class="review-value editable" id="rev_painPoints"></textarea></div>
+          </div>
+        </div>
+
+        <div class="review-section">
+          <h3>⚙️ 功能需求</h3>
+          <div class="review-row"><span class="review-label">功能列表（每行一个，格式：优先级 功能描述）</span><textarea class="review-value editable" id="rev_features" style="min-height:120px;"></textarea></div>
+        </div>
+
+        <div class="review-section">
+          <h3>🔄 用户流程与交互</h3>
+          <div class="review-grid">
+            <div class="review-row"><span class="review-label">核心流程</span><textarea class="review-value editable" id="rev_flow"></textarea></div>
+            <div class="review-row"><span class="review-label">关键页面</span><textarea class="review-value editable" id="rev_pages"></textarea></div>
+          </div>
+        </div>
+
+        <div class="btn-group center">
+          <button class="btn btn-secondary" onclick="showStep(4)">← 返回修改</button>
+          <button class="btn btn-primary" onclick="generateTechnicalSpec()">✨ 确认无误，生成技术方案</button>
+        </div>
+      </div>
+
+      <div id="resultLoading" style="display:none">
+        <div class="loading-screen">
+          <span class="loading-icon">⚙️</span>
+          <h3>AI 正在生成技术方案……</h3>
+          <p>小P正在调用 DeepSeek V4 Pro，根据你的需求生成完整的技术规格</p>
+        </div>
+      </div>
+
+      <div id="resultContent" style="display:none">
+        <div class="result-header">
+          <div class="celebration">🎉</div>
+          <h2>技术方案已生成！</h2>
+          <p style="color:var(--text-light);margin-top:8px;">以下方案可直接复制给 AI 编程工具（如 Cursor、GitHub Copilot）使用 🚀</p>
+        </div>
+        <div style="margin-bottom:16px;text-align:center;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+          <button class="btn btn-copy" onclick="copyAllModules()">📋 一键复制全部方案</button>
+          <button class="btn btn-edit" onclick="backToReview()">✏️ 返回修改</button>
+          <button class="btn btn-outline" onclick="resetAll()">🔄 重新开始</button>
+        </div>
+        <div id="modulesContainer"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+  小P的 PRD 学习工坊 · 学会写需求，产品第一步 📋
+  <br><a href="#" onclick="event.preventDefault();openApiKeyModal();" style="color:var(--text-light);font-size:12px;text-decoration:underline;">修改 API Key</a>
+</div>
+</div>
+
+<script>
+// ═══ API Key Modal ═══
+function hasApiKey() {
+  const key = getApiKey();
+  return key && key.startsWith('sk-');
+}
+
+function openApiKeyModal() {
+  document.getElementById('apiKeyInput').value = getApiKey();
+  document.getElementById('apiModal').style.display = 'flex';
+}
+
+function saveApiKeyFromModal() {
+  const input = document.getElementById('apiKeyInput');
+  const errEl = document.getElementById('apiError');
+  const val = input.value.trim();
+  if (!val.startsWith('sk-')) {
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+  setApiKey(val);
+  document.getElementById('apiModal').style.display = 'none';
+  showToast('✅ API Key 已保存！页面即将刷新');
+  setTimeout(() => { location.reload(); }, 1000);
+}
+
+function updateAIButtons() {
+  const has = hasApiKey();
+  const aiSections = document.querySelectorAll('.ai-gen-section');
+  const keyBtn = document.getElementById('btnApiKey');
+  const keyLabel = document.getElementById('btnApiKeyLabel');
+
+  aiSections.forEach(section => {
+    if (has) section.classList.add('show');
+    else section.classList.remove('show');
+  });
+
+  if (keyBtn) {
+    if (has) { keyBtn.classList.add('has-key'); keyLabel.textContent = 'AI Key ✓'; }
+    else { keyBtn.classList.remove('has-key'); keyLabel.textContent = '配置 AI Key'; }
+  }
+}
+
+// ═══ DeepSeek API ═══
+const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
+const MODEL_FLASH = 'deepseek-v4-flash';
+const MODEL_PRO = 'deepseek-v4-pro';
+const LS_KEY = 'prd_workshop_ds_key';
+
+function getApiKey() { return localStorage.getItem(LS_KEY) || ''; }
+function setApiKey(k) { localStorage.setItem(LS_KEY, k); }
+
+async function callDeepSeek(prompt, temperature, model) {
+  const m = model || MODEL_FLASH;
+  const res = await fetch(DEEPSEEK_API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getApiKey()}` },
+    body: JSON.stringify({ model: m, messages: [{ role: 'user', content: prompt }], stream: false, temperature: temperature || 0.7 })
+  });
+  if (!res.ok) { throw new Error('API 错误: ' + res.status); }
+  const data = await res.json();
+  return data.choices[0].message.content;
+}
+
+// ═══ Categories ═══
+const CATEGORIES = [
+  { id: 'social',    icon: '🗣️', name: '社交沟通' },
+  { id: 'homework',  icon: '📝', name: '作业学习' },
+  { id: 'parenting', icon: '👨‍👩‍👧', name: '亲子互动' },
+  { id: 'sport',     icon: '🏃', name: '运动健身' },
+  { id: 'food',      icon: '🥗', name: '饮食健康' },
+  { id: 'reduce',    icon: '♻️', name: '减少浪费' },
+  { id: 'water',     icon: '💧', name: '节约用水' },
+  { id: 'animal',    icon: '🐾', name: '保护动物' },
+  { id: 'community', icon: '🤝', name: '社区公益' },
+  { id: 'eco',       icon: '🌍', name: '环保行动' },
+  { id: 'campus',    icon: '🏫', name: '校园服务' },
+  { id: 'club',      icon: '🎨', name: '兴趣社团' },
+];
+let selectedCats = [];
+
+function renderCategories() {
+  const grid = document.getElementById('catGrid');
+  grid.innerHTML = CATEGORIES.map(c => `
+    <div class="cat-card" data-id="${c.id}" onclick="toggleCat('${c.id}')">
+      <div class="cat-badge">✓</div>
+      <span class="cat-icon">${c.icon}</span>
+      <span class="cat-name">${c.name}</span>
+    </div>
+  `).join('');
+}
+
+function toggleCat(id) {
+  const idx = selectedCats.indexOf(id);
+  if (idx >= 0) {
+    selectedCats.splice(idx, 1);
+  } else {
+    if (selectedCats.length >= 2) {
+      showToast('最多选 2 个类别哦');
+      return;
+    }
+    selectedCats.push(id);
+  }
+  updateCatUI();
+}
+
+function updateCatUI() {
+  const cards = document.querySelectorAll('.cat-card');
+  cards.forEach(c => {
+    c.classList.remove('selected', 'disabled');
+    if (selectedCats.includes(c.dataset.id)) c.classList.add('selected');
+  });
+  // Disable unselected when 2 are picked
+  if (selectedCats.length >= 2) {
+    cards.forEach(c => {
+      if (!selectedCats.includes(c.dataset.id)) c.classList.add('disabled');
+    });
+  }
+  document.getElementById('catCount').textContent = selectedCats.length;
+  // Enable AI button
+  const hasCats = selectedCats.length > 0;
+  const btn = document.getElementById('aiBtn1');
+  btn.disabled = !hasCats;
+  document.getElementById('aiGen1Desc').textContent = hasCats
+    ? `已选：${selectedCats.map(id => CATEGORIES.find(c => c.id === id).name).join('、')}，点按钮生成方案`
+    : '请先选择 1~2 个类别';
+}
+
+function getSelectedCatNames() {
+  const names = selectedCats.map(id => {
+    const cat = CATEGORIES.find(c => c.id === id);
+    return cat ? cat.name : id;
+  });
+  const custom = document.getElementById('catCustom').value.trim();
+  if (custom) names.push(custom);
+  return names;
+}
+
+// ═══ Navigation ═══
+let currentStep = 1;
+const TOTAL_INPUT_STEPS = 4;
+
+function showStep(n) {
+  document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.step-dot').forEach(el => el.classList.remove('active'));
+  const content = document.querySelector(`.step-content[data-step="${n}"]`);
+  if (content) content.classList.add('active');
+  const dot = document.querySelector(`.step-dot[data-step="${n}"]`);
+  if (dot) dot.classList.add('active');
+  updateProgress(n);
+  currentStep = n;
+  window.scrollTo({ top: document.getElementById('mainCard').offsetTop - 80, behavior: 'smooth' });
+}
+
+function updateProgress(n) {
+  document.querySelectorAll('.step-dot').forEach(dot => {
+    const s = parseInt(dot.dataset.step);
+    dot.classList.remove('done', 'active');
+    if (s < n) dot.classList.add('done');
+    else if (s === n) dot.classList.add('active');
+  });
+  document.getElementById('progressFill').style.width = Math.max(0, (n - 1) / (TOTAL_INPUT_STEPS + 1) * 100) + '%';
+}
+
+function nextStep() { if (currentStep < TOTAL_INPUT_STEPS) showStep(currentStep + 1); }
+function prevStep() { if (currentStep > 1) showStep(currentStep - 1); }
+
+// ═══ Collect Data ═══
+function getFeatures() {
+  const items = document.querySelectorAll('#featureContainer .feature-item');
+  const features = [];
+  items.forEach(item => {
+    const input = item.querySelector('.feature-input');
+    const select = item.querySelector('.feature-priority');
+    if (input && input.value.trim()) features.push({ desc: input.value.trim(), priority: select.value });
+  });
+  return features;
+}
+
+function collectData() {
+  return {
+    productName: document.getElementById('s1_productName').value.trim(),
+    productType: document.getElementById('s1_productType').value.trim(),
+    problem: document.getElementById('s1_problem').value.trim(),
+    goals: document.getElementById('s1_goals').value.trim(),
+    users: document.getElementById('s2_users').value.trim(),
+    scenarios: document.getElementById('s2_scenarios').value.trim(),
+    painPoints: document.getElementById('s2_painPoints').value.trim(),
+    features: getFeatures(),
+    flow: document.getElementById('s4_flow').value.trim(),
+    pages: document.getElementById('s4_pages').value.trim(),
+  };
+}
+
+// ═══ extractField - robust ═══
+function extractField(text, fieldName) {
+  const patterns = [
+    new RegExp(`\\[${fieldName}\\][\\s：:]*([^\\n]+(?:\\n(?!\\[|\\*\\*)[^\\n]+)*)`, 'i'),
+    new RegExp(`\\*\\*${fieldName}\\*\\*[\\s：:]*([^\\n]+(?:\\n(?!\\[|\\*\\*)[^\\n]+)*)`, 'i'),
+    new RegExp(`${fieldName}[\\s：:]*([^\\n]+(?:\\n(?!\\[|\\*\\*|${fieldName})[^\\n]+)*)`, 'i'),
+  ];
+  for (const regex of patterns) {
+    const match = text.match(regex);
+    if (match) return match[1].trim();
+  }
+  return '';
+}
+
+// ═══ Parse complete options from AI output ═══
+function parseCompleteOptions(text) {
+  const blocks = [];
+  const regex = /方案\s*\d+\s*[：:]([\s\S]*?)(?=方案\s*\d+\s*[：:]|$)/g;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    const content = match[1].trim();
+    if (content.length > 10) blocks.push(content);
+  }
+  if (blocks.length === 0) {
+    const parts = text.split(/\n\s*\n/).filter(p => p.trim().length > 10);
+    return parts.slice(0, 5);
+  }
+  return blocks.slice(0, 5);
+}
+
+function showRadioOptions(step, options) {
+  const wrap = document.getElementById(`roWrap${step}`);
+  const list = document.getElementById(`roList${step}`);
+  if (!wrap || !list) return;
+
+  list.innerHTML = options.map((opt, i) => {
+    const displayText = opt.replace(/\[[^\]]+\]/g, (m) => `<strong style="color:var(--purple)">${m}</strong>`).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    return `<div class="radio-option-item" onclick="selectOption(${step}, ${i}, this)"><div class="radio-circle" id="rc-${step}-${i}"></div><div class="radio-text">${displayText.replace(/\n/g, '<br>')}</div></div>`;
+  }).join('');
+
+  window[`_step${step}options`] = options;
+  wrap.style.display = 'block';
+}
+
+function selectOption(step, index, el) {
+  const list = document.getElementById(`roList${step}`);
+  list.querySelectorAll('.radio-option-item').forEach(item => { item.classList.remove('selected'); item.querySelector('.radio-circle').textContent = ''; });
+  el.classList.add('selected');
+  el.querySelector('.radio-circle').textContent = '✓';
+
+  const options = window[`_step${step}options`];
+  if (!options || !options[index]) return;
+  const text = options[index];
+
+  if (step === 1) fillStep1(text);
+  else if (step === 2) fillStep2(text);
+  else if (step === 4) fillStep4(text);
+}
+
+function fillStep1(text) {
+  const name = extractField(text, '产品名称');
+  const type = extractField(text, '产品类型');
+  const problem = extractField(text, '核心问题');
+  const goals = extractField(text, '产品目标');
+  if (name) document.getElementById('s1_productName').value = name;
+  if (type) document.getElementById('s1_productType').value = type;
+  if (problem) document.getElementById('s1_problem').value = problem;
+  if (goals) document.getElementById('s1_goals').value = goals;
+}
+
+function fillStep2(text) {
+  const users = extractField(text, '目标用户群体') || extractField(text, '目标用户');
+  const scenarios = extractField(text, '使用场景');
+  const painPoints = extractField(text, '用户痛点') || extractField(text, '痛点');
+  if (users) document.getElementById('s2_users').value = users;
+  if (scenarios) document.getElementById('s2_scenarios').value = scenarios;
+  if (painPoints) document.getElementById('s2_painPoints').value = painPoints;
+}
+
+function fillStep4(text) {
+  const flowMatch = text.match(/\[核心流程\][\s\S]*?(?=\[关键页面|关键页面|$)/i);
+  const pagesMatch = text.match(/\[关键页面[^\]]*\][\s\S]*?$/i);
+  if (flowMatch) {
+    const fContent = flowMatch[0].replace(/^\s*\[核心流程\]\s*/i, '').trim();
+    document.getElementById('s4_flow').value = fContent;
+  }
+  if (pagesMatch) {
+    const pContent = pagesMatch[0].replace(/^\s*\[关键页面[^\]]*\]\s*/i, '').trim();
+    document.getElementById('s4_pages').value = pContent;
+  }
+  if (!flowMatch && !pagesMatch) {
+    const parts = text.split(/\n{2,}/);
+    if (parts.length >= 1) document.getElementById('s4_flow').value = parts[0].trim();
+    if (parts.length >= 2) document.getElementById('s4_pages').value = parts[1].trim();
+  }
+}
+
+// ═══ Step 1: Category-based AI generation ═══
+async function aiGenerateStep1() {
+  if (selectedCats.length === 0) { alert('请先选择类别'); return; }
+  const btn = document.getElementById('aiBtn1');
+  btn.classList.add('loading'); btn.textContent = '⏳ 生成中…';
+
+  try {
+    const catNames = getSelectedCatNames();
+    const d = collectData();
+    const prompt = `你是一个面向小学生的产品创意顾问。请根据以下兴趣方向，生成3个不同的**网页应用**创意方案。每个方案必须是可以做成网页应用的，贴近小学生和初中生的真实校园/日常生活场景。
+
+选中的兴趣方向：${catNames.join('、')}
+
+可选参考（忽略未填写的）：
+- 产品名称：${d.productName || '无'}
+- 产品类型：网页应用
+
+重要规则：
+1. 必须生成3个不同的网页应用方案，不能是App或小程序
+2. 创意要聚焦在：${catNames.join('、')}，融合这些方向
+3. 方案要具体、可落地，贴近小/初中生的真实生活
+4. 每个方案是一个完整的文本块
+5. **格式必须严格如下，标签和冒号不能省略**：
+
+方案1：
+[产品名称]一个简短的产品名称
+[产品类型]网页应用（可加修饰如"响应式网页应用"）
+[核心问题]这个产品要解决的核心问题（1-2句话）
+[产品目标]上线后希望达到的效果或指标
+
+方案2：
+...（同上格式）
+
+方案3：
+...（同上格式）
+
+注意：
+- 方括号标签不要省略，如 [产品名称]
+- 不要用**加粗**替代方括号标签
+- 产品类型必须包含"网页应用"`;
+    const result = await callDeepSeek(prompt, 0.8);
+    const options = parseCompleteOptions(result);
+    if (options.length === 0) { alert('未生成有效方案，请重试'); return; }
+    showRadioOptions(1, options);
+  } catch (e) { alert('AI 生成失败：' + e.message); }
+  finally { btn.classList.remove('loading'); btn.textContent = '✨ AI 基于我的兴趣生成方案'; }
+}
+
+// ═══ Step 2 & 4: Generic AI generation ═══
+const STEP_PROMPTS = {
+  2: (d) => `请为"${d.productName || '一个新产品'}"生成3个完整的"用户画像与使用场景"方案。每个方案必须包含：目标用户群体、使用场景描述、用户痛点分析。
+
+要求：
+1. 生成3个不同的用户场景方案，必须贴近小学生和初中生的真实生活
+2. 每个方案是一个完整的文本块，3个信息要自然连贯
+3. 格式严格如下：
+
+方案1：
+[目标用户群体]xxx
+[使用场景]xxx
+[用户痛点]xxx
+
+方案2：
+[目标用户群体]xxx
+[使用场景]xxx
+[用户痛点]xxx
+
+方案3：
+[目标用户群体]xxx
+[使用场景]xxx
+[用户痛点]xxx`,
+
+  4: (d) => { const fStr = d.features.map(f => `- [${f.priority}] ${f.desc}`).join('\n') || '（功能列表为空）';
+    return `请为"${d.productName || '一个新产品'}"生成3个完整的用户操作流程方案（网页应用）。
+
+该产品的功能列表：
+${fStr}
+
+要求：
+1. 每个方案是一套完整的用户操作步骤（5-7步），以及对应的关键页面描述
+2. 流程必须基于功能列表，体现功能在实际操作中的使用
+3. 格式严格如下：
+
+方案1：
+[核心流程]
+步骤1：xxx
+步骤2：xxx
+（共5-7步）
+
+[关键页面描述]
+页面1：xxx
+页面2：xxx
+
+方案2：
+...（同上）
+
+方案3：
+...（同上）`; },
+};
+
+async function aiGenerate(step) {
+  const btn = document.getElementById(`aiBtn${step}`);
+  btn.classList.add('loading'); btn.textContent = '⏳ 生成中…';
+  try {
+    const d = collectData();
+    const result = await callDeepSeek(STEP_PROMPTS[step](d), 0.8);
+    const options = parseCompleteOptions(result);
+    if (options.length === 0) { alert('未生成有效方案，请重试'); return; }
+    showRadioOptions(step, options);
+  } catch (e) { alert('AI 生成失败：' + e.message); }
+  finally { btn.classList.remove('loading'); btn.textContent = '✨ AI 帮我生成选项'; }
+}
+
+// ═══ Step 3: Feature generation ═══
+async function aiGenerateFeatures() {
+  const btn = document.getElementById('aiBtn3');
+  btn.classList.add('loading'); btn.textContent = '⏳ 生成中…';
+  try {
+    const d = collectData();
+    const prompt = `请为"${d.productName || '一个新产品'}"（类型：${d.productType || '网页应用'}）生成3套功能方案。
+
+要求：
+1. 每套方案包含5-8个功能，标注优先级P0（必须）/P1（应该）/P2（可选）
+2. 3套方案各有侧重（如核心体验、社交互动、数据分析），用方案名说明
+3. P0不超过3个
+4. 每个功能包含名称和一句话描述
+5. 格式严格如下：
+
+方案1：极简核心版
+[P0] 功能名称：功能描述
+[P1] 功能名称：功能描述
+...
+
+方案2：增强互动版
+[P0] 功能名称：功能描述
+...
+
+方案3：智能升级版
+[P0] 功能名称：功能描述
+...`;
+    const result = await callDeepSeek(prompt, 0.8);
+    const sets = parseFeatureSets(result);
+    showFeatureSets(sets);
+  } catch (e) { alert('AI 生成失败：' + e.message); }
+  finally { btn.classList.remove('loading'); btn.textContent = '✨ AI 帮我生成功能建议'; }
+}
+
+function parseFeatureSets(text) {
+  const sets = [];
+  const regex = /方案\s*\d*[：:]\s*(.+?)\n([\s\S]*?)(?=方案\s*\d*[：:]|$)/g;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    const features = [];
+    const lines = match[2].split('\n');
+    for (const line of lines) {
+      const fm = line.match(/^\s*\[(P\d)\]\s*(.+)$/i);
+      if (fm) features.push({ priority: fm[1], text: fm[2].trim() });
+    }
+    if (features.length > 0) sets.push({ name: match[1].trim(), features });
+  }
+  if (sets.length === 0) {
+    const allFeatures = [];
+    const lines = text.split('\n');
+    for (const line of lines) {
+      const fm = line.match(/^\s*\[(P\d)\]\s*(.+)$/i);
+      if (fm) allFeatures.push({ priority: fm[1], text: fm[2].trim() });
+    }
+    if (allFeatures.length > 0) sets.push({ name: 'AI建议功能', features: allFeatures });
+  }
+  return sets;
+}
+
+function showFeatureSets(sets) {
+  const wrap = document.getElementById('fsWrap3');
+  const list = document.getElementById('fsList3');
+  if (!wrap || !list) return;
+  let html = ''; let gIdx = 0;
+  sets.forEach(set => {
+    html += `<div class="fs-set"><div class="fs-set-header">📦 ${set.name}</div>`;
+    set.features.forEach(f => {
+      html += `<div class="fs-item" onclick="toggleFeatureItem(this,${gIdx})"><div class="fs-check" id="fsc-${gIdx}"></div><div class="fs-text"><span class="fs-priority">[${f.priority}]</span> ${f.text}</div></div>`;
+      gIdx++;
+    });
+    html += `</div>`;
+  });
+  list.innerHTML = html;
+  window._featureSets = sets;
+  window._selectedFeatures = new Set();
+  wrap.classList.add('show');
+}
+
+function toggleFeatureItem(el, gIdx) {
+  const check = el.querySelector('.fs-check');
+  if (el.classList.contains('selected')) {
+    el.classList.remove('selected'); check.textContent = ''; window._selectedFeatures.delete(gIdx);
+  } else {
+    el.classList.add('selected'); check.textContent = '✓'; window._selectedFeatures.add(gIdx);
+  }
+}
+
+function addSelectedFeatures() {
+  if (!window._selectedFeatures || window._selectedFeatures.size === 0) { alert('请先勾选至少一个功能'); return; }
+  const container = document.getElementById('featureContainer');
+  let gIdx = 0;
+  window._featureSets.forEach(set => {
+    set.features.forEach(f => {
+      if (window._selectedFeatures.has(gIdx)) {
+        const div = document.createElement('div'); div.className = 'feature-item';
+        div.innerHTML = `<input type="text" class="feature-input" value="${f.text.replace(/"/g, '&quot;')}"><select class="feature-priority"><option value="P0" ${f.priority==='P0'?'selected':''}>P0 必须有</option><option value="P1" ${f.priority==='P1'?'selected':''}>P1 应该有</option><option value="P2" ${f.priority==='P2'?'selected':''}>P2 锦上添花</option></select><button class="btn-remove" onclick="removeFeature(this)">✕</button>`;
+        container.appendChild(div);
+      }
+      gIdx++;
+    });
+  });
+  window._selectedFeatures.clear();
+  document.querySelectorAll('.fs-item').forEach(el => { el.classList.remove('selected'); el.querySelector('.fs-check').textContent = ''; });
+}
+
+// ═══ Flow ═══
+async function aiGenerateFlow() {
+  const btn = document.getElementById('aiBtn4');
+  btn.classList.add('loading'); btn.textContent = '⏳ 生成中…';
+  try {
+    const d = collectData();
+    if (d.features.length === 0) { alert('请先在功能需求页添加至少一个功能'); return; }
+    const result = await callDeepSeek(STEP_PROMPTS[4](d), 0.8);
+    const options = parseCompleteOptions(result);
+    if (options.length === 0) { alert('未生成有效方案，请重试'); return; }
+    showRadioOptions(4, options);
+  } catch (e) { alert('AI 生成失败：' + e.message); }
+  finally { btn.classList.remove('loading'); btn.textContent = '✨ AI 根据我的功能生成流程'; }
+}
+
+// ═══ Feature List Management ═══
+function addFeature() { const c = document.getElementById('featureContainer'); const d = document.createElement('div'); d.className = 'feature-item'; d.innerHTML = `<input type="text" class="feature-input" placeholder="功能描述"><select class="feature-priority"><option value="P0">P0 必须有</option><option value="P1" selected>P1 应该有</option><option value="P2">P2 锦上添花</option></select><button class="btn-remove" onclick="removeFeature(this)">✕</button>`; c.appendChild(d); }
+function removeFeature(btn) { const c = document.getElementById('featureContainer'); if (c.children.length > 1) btn.parentElement.remove(); }
+
+// ═══ Review & Generate ═══
+function goToReview() {
+  const d = collectData();
+  document.getElementById('rev_productName').value = d.productName;
+  document.getElementById('rev_productType').value = d.productType;
+  document.getElementById('rev_problem').value = d.problem;
+  document.getElementById('rev_goals').value = d.goals;
+  document.getElementById('rev_users').value = d.users;
+  document.getElementById('rev_scenarios').value = d.scenarios;
+  document.getElementById('rev_painPoints').value = d.painPoints;
+  document.getElementById('rev_features').value = d.features.map(f => `${f.priority} ${f.desc}`).join('\n');
+  document.getElementById('rev_flow').value = d.flow;
+  document.getElementById('rev_pages').value = d.pages;
+  document.getElementById('reviewStep').style.display = 'block';
+  document.getElementById('resultLoading').style.display = 'none';
+  document.getElementById('resultContent').style.display = 'none';
+  showStep(5);
+}
+
+function backToReview() {
+  document.getElementById('reviewStep').style.display = 'block';
+  document.getElementById('resultLoading').style.display = 'none';
+  document.getElementById('resultContent').style.display = 'none';
+}
+
+async function generateTechnicalSpec() {
+  // Sync review
+  document.getElementById('s1_productName').value = document.getElementById('rev_productName').value;
+  document.getElementById('s1_productType').value = document.getElementById('rev_productType').value;
+  document.getElementById('s1_problem').value = document.getElementById('rev_problem').value;
+  document.getElementById('s1_goals').value = document.getElementById('rev_goals').value;
+  document.getElementById('s2_users').value = document.getElementById('rev_users').value;
+  document.getElementById('s2_scenarios').value = document.getElementById('rev_scenarios').value;
+  document.getElementById('s2_painPoints').value = document.getElementById('rev_painPoints').value;
+  document.getElementById('s4_flow').value = document.getElementById('rev_flow').value;
+  document.getElementById('s4_pages').value = document.getElementById('rev_pages').value;
+  const featLines = document.getElementById('rev_features').value.split('\n').filter(l => l.trim());
+  const fc = document.getElementById('featureContainer'); fc.innerHTML = '';
+  featLines.forEach(line => {
+    const m = line.match(/^(P\d)\s+(.+)$/i);
+    if (m) fc.innerHTML += `<div class="feature-item"><input type="text" class="feature-input" value="${m[2].replace(/"/g,'&quot;')}"><select class="feature-priority"><option value="P0" ${m[1]==='P0'?'selected':''}>P0 必须有</option><option value="P1" ${m[1]==='P1'?'selected':''}>P1 应该有</option><option value="P2" ${m[1]==='P2'?'selected':''}>P2 锦上添花</option></select><button class="btn-remove" onclick="removeFeature(this)">✕</button></div>`;
+  });
+
+  document.getElementById('reviewStep').style.display = 'none';
+  document.getElementById('resultLoading').style.display = 'block';
+  document.getElementById('resultContent').style.display = 'none';
+
+  const d = collectData();
+  const prompt = `你是一位资深全栈技术架构师。请根据以下产品需求，直接生成一份完整的技术规格文档。按以下模块组织，使用标准 Markdown 语法：
+
+【产品信息】- 名称：${d.productName||'未命名'} / 类型：${d.productType||'网页应用'} / 问题：${d.problem||'未填写'} / 目标：${d.goals||'未填写'}
+【用户】${d.users||'未填写'}
+【场景】${d.scenarios||'未填写'}
+【痛点】${d.painPoints||'未填写'}
+【功能】${d.features.map(f=>`[${f.priority}] ${f.desc}`).join('\n')||'未填写'}
+【流程】${d.flow||'未填写'}
+【页面】${d.pages||'未填写'}
+
+## 模块一：产品概述
+产品定位、核心价值、目标用户。200字以内。
+
+## 模块二：前端技术规格
+技术栈推荐（因为这面向小学生初中生，技术栈不要太复杂）、页面清单与路由、核心组件设计、接口对接
+
+## 模块三：后端 API 设计
+技术栈、接口列表（RESTful格式：方法、路径、参数、响应）、认证方案、错误处理
+
+## 模块四：数据库设计
+数据库选型理由、表结构（表名、字段、类型、约束、索引）、核心查询
+
+## 模块五：部署与运维
+部署方案、CI/CD建议、监控
+
+要求：技术选型简单实用（面向教学场景）、接口RESTful、中文输出、Markdown格式`;
+
+  try {
+    const result = await callDeepSeek(prompt, 0.6, MODEL_PRO);
+    renderModules(result);
+    document.getElementById('resultLoading').style.display = 'none';
+    document.getElementById('resultContent').style.display = 'block';
+  } catch (e) {
+    document.getElementById('resultLoading').innerHTML = `<div class="loading-screen"><span style="font-size:48px">😢</span><h3>生成失败</h3><p>${e.message}</p><button class="btn btn-primary" style="margin-top:16px" onclick="generateTechnicalSpec()">重试</button></div>`;
+  }
+}
+
+function renderModules(md) {
+  const icons = { '产品概述':'📋','前端技术规格':'📱','后端 API 设计':'⚙️','数据库设计':'🗄️','部署与运维':'🚀' };
+  const modules = [];
+  const regex = /##\s*模块[一二三四五\d]*[：:]\s*(.+?)\n/;
+  let pos = 0;
+  while (true) {
+    const m = regex.exec(md.slice(pos));
+    if (!m) break;
+    const s = pos + m.index, name = m[1].trim();
+    const nm = regex.exec(md.slice(s + m[0].length));
+    const end = nm ? s + m[0].length + nm.index : md.length;
+    modules.push({ name, content: md.slice(s + m[0].length, end).trim() });
+    pos = end;
+  }
+  if (modules.length === 0) modules.push({ name: '技术方案', content: md });
+
+  document.getElementById('modulesContainer').innerHTML = modules.map((m, i) => {
+    return `<div class="module-card"><div class="module-header"><div class="module-title">${icons[m.name]||'📄'} ${m.name}</div><button class="btn btn-copy btn-small" onclick="copyModule(${i})" id="modCopyBtn${i}">📋 复制</button></div><div class="module-body">${marked.parse(m.content)}</div></div>`;
+  }).join('');
+  window._modules = modules;
+}
+
+async function copyModule(i) {
+  await copyToClipboard(window._modules[i].content);
+  const btn = document.getElementById('modCopyBtn'+i); btn.classList.add('copied'); btn.textContent = '✅ 已复制';
+  setTimeout(() => { btn.classList.remove('copied'); btn.textContent = '📋 复制'; }, 2000);
+}
+async function copyAllModules() {
+  await copyToClipboard(window._modules.map(m => `## ${m.name}\n\n${m.content}`).join('\n\n---\n\n'));
+  showToast('✅ 已复制');
+}
+async function copyToClipboard(text) {
+  try { await navigator.clipboard.writeText(text); }
+  catch { const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
+}
+function showToast(msg) { const t = document.createElement('div'); t.className = 'copy-toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2000); }
+
+// ═══ Reset ═══
+function resetAll() {
+  ['s1_productName','s1_productType','s1_problem','s1_goals','s2_users','s2_scenarios','s2_painPoints','s4_flow','s4_pages'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('s1_productType').value = '网页应用';
+  document.getElementById('featureContainer').innerHTML = `<div class="feature-item"><input type="text" class="feature-input" placeholder="功能描述"><select class="feature-priority"><option value="P0">P0 必须有</option><option value="P1" selected>P1 应该有</option><option value="P2">P2 锦上添花</option></select><button class="btn-remove" onclick="removeFeature(this)">✕</button></div>`;
+  [1,2,4].forEach(s => { const w = document.getElementById(`roWrap${s}`); if (w) w.style.display = 'none'; });
+  const fw = document.getElementById('fsWrap3'); if (fw) fw.classList.remove('show');
+  selectedCats = []; updateCatUI();
+  document.getElementById('catCustom').value = '';
+  document.getElementById('resultLoading').innerHTML = `<div class="loading-screen"><span class="loading-icon">⚙️</span><h3>AI 正在生成技术方案……</h3><p>小P正在调用 DeepSeek V4 Pro，根据你的需求生成完整的技术规格</p></div>`;
+  showStep(1); window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ═══ Init ═══
+renderCategories();
+updateCatUI();
+updateProgress(1);
+updateAIButtons();
+</script>
+</body>
+</html>

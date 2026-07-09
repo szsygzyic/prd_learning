@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>什么是 PRD？ - 小P讲给小学生</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --pink: #ff6b9d;
+  --purple: #c471ed;
+  --blue: #667eea;
+  --teal: #12c2e9;
+  --orange: #f5af19;
+  --green: #43e97b;
+  --text: #2d3436;
+  --text-light: #636e72;
+  --bg: #fef9ff;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: linear-gradient(135deg, #fef9ff 0%, #f0e6ff 50%, #e8f4fd 100%);
+  height: 100vh;
+  color: var(--text);
+  overflow: hidden;
+}
+
+.bg-blob {
+  position: fixed; border-radius: 50%; filter: blur(90px); opacity: 0.35; pointer-events: none;
+}
+.bg-blob-1 { width: 300px; height: 300px; background: #ff6b9d33; top: -60px; right: -60px; }
+.bg-blob-2 { width: 260px; height: 260px; background: #667eea33; bottom: -50px; left: -50px; }
+
+.container {
+  max-width: 860px;
+  margin: 0 auto;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 20px 10px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Progress */
+.progress-bar {
+  display: flex; gap: 5px; margin-bottom: 10px; flex-shrink: 0;
+}
+.progress-dot {
+  flex: 1; height: 5px; background: #e0e0e0; border-radius: 3px; transition: all 0.4s ease;
+}
+.progress-dot.active { background: linear-gradient(90deg, var(--pink), var(--purple)); }
+
+/* Slide */
+.slide {
+  flex: 1;
+  display: none;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  text-align: center;
+  animation: fadeIn 0.5s ease;
+  min-height: 0;
+  overflow: hidden;
+}
+.slide.active { display: flex; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-icon { font-size: 44px; margin-bottom: 6px; display: block; }
+.slide h1 {
+  font-size: 28px; font-weight: 800; margin-bottom: 6px;
+  background: linear-gradient(135deg, var(--pink), var(--purple), var(--blue));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.slide h2 { font-size: 24px; font-weight: 800; margin-bottom: 6px; color: var(--text); }
+.slide p { font-size: 15px; color: var(--text-light); line-height: 1.5; max-width: 720px; }
+.slide .highlight { color: var(--purple); font-weight: 700; }
+
+/* Cards */
+.card-row {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; justify-content: center; margin-top: 10px; width: 100%;
+}
+.card-row.four {
+  grid-template-columns: repeat(2, 1fr); max-width: 520px; margin-left: auto; margin-right: auto;
+}
+.card {
+  background: white; border-radius: 14px; padding: 12px 10px;
+  box-shadow: 0 4px 16px rgba(149, 117, 205, 0.1);
+  border: 2px solid transparent; transition: all 0.3s ease;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(149, 117, 205, 0.16); border-color: var(--purple); }
+.card .emoji { font-size: 30px; margin-bottom: 5px; }
+.card h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+.card p { font-size: 12px; color: var(--text-light); line-height: 1.45; }
+
+/* Comparison */
+.compare-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 12px; width: 100%; }
+.compare-box {
+  background: white; border-radius: 14px; padding: 12px 14px; flex: 1;
+  min-width: 200px; max-width: 320px; text-align: left;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+}
+.compare-box.bad { border-left: 4px solid #ff6b6b; }
+.compare-box.good { border-left: 4px solid var(--green); }
+.compare-box .tag { font-size: 11px; font-weight: 700; margin-bottom: 5px; }
+.compare-box.bad .tag { color: #ff6b6b; }
+.compare-box.good .tag { color: var(--green); }
+.compare-box h3 { font-size: 15px; margin-bottom: 5px; }
+.compare-box ul { margin-left: 16px; font-size: 12px; color: var(--text-light); line-height: 1.6; }
+
+/* Navigation */
+.nav-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 8px; margin-top: 8px; flex-shrink: 0;
+}
+.nav-btn {
+  background: white; color: var(--purple); border: 2px solid var(--purple);
+  padding: 8px 20px; border-radius: 50px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.3s ease; font-family: inherit;
+}
+.nav-btn:hover { background: #f3e8ff; transform: translateY(-2px); }
+.nav-btn.primary {
+  background: linear-gradient(135deg, var(--pink), var(--purple)); color: white;
+  border: none; box-shadow: 0 4px 16px rgba(255, 107, 157, 0.3);
+}
+.nav-btn.primary:hover { box-shadow: 0 6px 24px rgba(255, 107, 157, 0.4); }
+.nav-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+.slide-counter { font-size: 12px; color: var(--text-light); font-weight: 600; }
+
+/* Final CTA */
+.cta-btn {
+  display: inline-block; margin-top: 12px;
+  background: linear-gradient(135deg, var(--pink), var(--purple)); color: white;
+  padding: 12px 28px; border-radius: 50px; font-size: 15px; font-weight: 700;
+  text-decoration: none; box-shadow: 0 4px 16px rgba(255, 107, 157, 0.35);
+  transition: all 0.3s ease;
+}
+.cta-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 32px rgba(255, 107, 157, 0.45); }
+
+.footer { text-align: center; padding: 4px 0 0; color: var(--text-light); font-size: 11px; flex-shrink: 0; }
+
+@media (max-width: 640px) {
+  .container { padding: 10px 14px; }
+  .slide h1 { font-size: 22px; }
+  .slide h2 { font-size: 20px; }
+  .slide p { font-size: 13px; }
+  .slide-icon { font-size: 36px; }
+  .card-row { grid-template-columns: 1fr; }
+  .card-row.four { grid-template-columns: 1fr; max-width: 100%; }
+  .compare-box { min-width: 100%; max-width: 100%; }
+  .nav-btn { padding: 7px 14px; font-size: 12px; }
+  .cta-btn { padding: 10px 22px; font-size: 14px; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-blob bg-blob-1"></div>
+<div class="bg-blob bg-blob-2"></div>
+
+<div class="container">
+  <div class="progress-bar" id="progressBar"></div>
+
+  <!-- Slide 1: 封面 -->
+  <div class="slide active" data-slide="0">
+    <span class="slide-icon">📋</span>
+    <h1>什么是 PRD？</h1>
+    <p>小P带你认识产品经理的「秘密武器」——<span class="highlight">PRD（产品需求文档）</span></p>
+    <p style="margin-top:8px;font-size:13px;">它就像计划书、说明书、菜谱……我们一起来看看！</p>
+  </div>
+
+  <!-- Slide 2: 三个类比 -->
+  <div class="slide" data-slide="1">
+    <h2>PRD 是什么？🤔</h2>
+    <p>PRD 就是一份「<span class="highlight">产品说明书</span>」，告诉别人你要做什么产品，为什么做，怎么做。</p>
+    <div class="card-row">
+      <div class="card">
+        <div class="emoji">🍰</div>
+        <h3>像菜谱</h3>
+        <p>做菜前写好食材、步骤，别人才能跟着做。</p>
+      </div>
+      <div class="card">
+        <div class="emoji">🗺️</div>
+        <h3>像地图</h3>
+        <p>出门前查好路线，才知道每一步往哪走。</p>
+      </div>
+      <div class="card">
+        <div class="emoji">📐</div>
+        <h3>像图纸</h3>
+        <p>盖房子前画好图，工人知道门开在哪。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 3: 例子 盖房子 -->
+  <div class="slide" data-slide="2">
+    <span class="slide-icon">🏠</span>
+    <h2>没有 PRD 会怎样？</h2>
+    <div class="compare-row">
+      <div class="compare-box bad">
+        <div class="tag">❌ 没有 PRD</div>
+        <h3>随便盖的房子</h3>
+        <ul>
+          <li>工人以为厨房在二楼</li>
+          <li>盖完发现没有洗手间</li>
+          <li>门开在了天花板上</li>
+          <li>大家互相责怪</li>
+        </ul>
+      </div>
+      <div class="compare-box good">
+        <div class="tag">✅ 有 PRD</div>
+        <h3>有图纸的房子</h3>
+        <ul>
+          <li>每个人都知道目标</li>
+          <li>房间尺寸清清楚楚</li>
+          <li>材料时间好安排</li>
+          <li>出错少，效率高</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 4: 例子 生日派对 -->
+  <div class="slide" data-slide="3">
+    <span class="slide-icon">🎂</span>
+    <h2>再做一道题：生日派对</h2>
+    <div class="compare-row">
+      <div class="compare-box bad">
+        <div class="tag">❌ 没有 PRD</div>
+        <h3>临时抱佛脚</h3>
+        <ul>
+          <li>忘了邀请好朋友</li>
+          <li>蛋糕买成榴莲味</li>
+          <li>场地订错日期</li>
+          <li>游戏环节一团乱</li>
+        </ul>
+      </div>
+      <div class="compare-box good">
+        <div class="tag">✅ 有 PRD</div>
+        <h3>提前写计划</h3>
+        <ul>
+          <li>时间、地点、人员列好</li>
+          <li>提前问朋友喜欢吃什么</li>
+          <li>游戏流程安排明白</li>
+          <li>派对顺顺利利</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 5: 做游戏 -->
+  <div class="slide" data-slide="4">
+    <span class="slide-icon">🎮</span>
+    <h2>做网页应用也是同理</h2>
+    <p>如果你想做一个「<span class="highlight">班级运动打卡网页</span>」：</p>
+    <div class="card-row four">
+      <div class="card">
+        <div class="emoji">🎯</div>
+        <h3>目标</h3>
+        <p>全班同学每天记录运动，一个月后看谁最坚持。</p>
+      </div>
+      <div class="card">
+        <div class="emoji">👤</div>
+        <h3>用户</h3>
+        <p>小学五年级学生、体育老师、班主任。</p>
+      </div>
+      <div class="card">
+        <div class="emoji">⚙️</div>
+        <h3>功能</h3>
+        <p>打卡、排行榜、提醒、数据统计。</p>
+      </div>
+      <div class="card">
+        <div class="emoji">🔄</div>
+        <h3>流程</h3>
+        <p>打开网页 → 登录 → 选择运动 → 提交打卡。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 6: 为什么做 PRD -->
+  <div class="slide" data-slide="5">
+    <h2>为什么要做 PRD？🌟</h2>
+    <div class="card-row">
+      <div class="card">
+        <div class="emoji">🧠</div>
+        <h3>想清楚</h3>
+        <p>逼自己想明白：解决什么问题？谁会用？</p>
+      </div>
+      <div class="card">
+        <div class="emoji">🗣️</div>
+        <h3>讲清楚</h3>
+        <p>让队友、老师、程序都能理解你要做什么。</p>
+      </div>
+      <div class="card">
+        <div class="emoji">🚀</div>
+        <h3>少返工</h3>
+        <p>提前发现问题，避免做了一半方向错了。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 7: PRD 四部分 -->
+  <div class="slide" data-slide="6">
+    <h2>PRD 有哪几个部分？📝</h2>
+    <p>一个最简单的 PRD，通常包含下面四块内容：</p>
+    <div class="card-row four">
+      <div class="card">
+        <div class="emoji">🎯</div>
+        <h3>背景与目标</h3>
+        <p>为什么要做？解决什么问题？成功标准是什么？</p>
+      </div>
+      <div class="card">
+        <div class="emoji">👤</div>
+        <h3>用户与场景</h3>
+        <p>谁会用？在什么时候、什么地方用？</p>
+      </div>
+      <div class="card">
+        <div class="emoji">⚙️</div>
+        <h3>功能需求</h3>
+        <p>产品能做什么？哪些最重要？</p>
+      </div>
+      <div class="card">
+        <div class="emoji">🔄</div>
+        <h3>流程与交互</h3>
+        <p>用户怎么一步步操作？页面长什么样？</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 8: 今天我们做什么 -->
+  <div class="slide" data-slide="7">
+    <span class="slide-icon">🛠️</span>
+    <h2>今天我们要做什么？</h2>
+    <p style="font-size:18px;">我们要一起完成一份属于你自己的 <span class="highlight">PRD</span>！</p>
+    <p style="margin-top:8px;">选择一个感兴趣的方向：运动、环保、学习、健康饮食……<br>然后一步步定义产品，最后还能生成技术方案。</p>
+    <a href="prd-learning.html" class="cta-btn">👉 开始写我的 PRD</a>
+  </div>
+
+  <!-- Slide 9: 结尾 -->
+  <div class="slide" data-slide="8">
+    <span class="slide-icon">🎉</span>
+    <h1>准备好了吗？</h1>
+    <p>PRD 不是写给别人看的「作业」，<br>它是帮你<span class="highlight">把想法变清楚、把产品做明白</span>的好工具。</p>
+    <p style="margin-top:10px;font-size:16px;">好的产品，从一份好的 PRD 开始！</p>
+    <a href="prd-learning.html" class="cta-btn">🚀 进入 PRD 学习工坊</a>
+  </div>
+
+  <div class="nav-bar">
+    <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">← 上一页</button>
+    <span class="slide-counter" id="slideCounter">1 / 9</span>
+    <button class="nav-btn primary" id="nextBtn" onclick="changeSlide(1)">下一页 →</button>
+  </div>
+
+  <div class="footer">小P的 PRD 小课堂 · 让想法变清晰 📋</div>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+let current = 0;
+
+const bar = document.getElementById('progressBar');
+for (let i = 0; i < total; i++) {
+  const d = document.createElement('div');
+  d.className = 'progress-dot';
+  bar.appendChild(d);
+}
+
+function updateSlide() {
+  slides.forEach((s, i) => { s.classList.toggle('active', i === current); });
+  const dots = document.querySelectorAll('.progress-dot');
+  dots.forEach((d, i) => { d.classList.toggle('active', i <= current); });
+  document.getElementById('slideCounter').textContent = `${current + 1} / ${total}`;
+  document.getElementById('prevBtn').disabled = current === 0;
+  document.getElementById('nextBtn').textContent = current === total - 1 ? '完成 🎉' : '下一页 →';
+}
+
+function changeSlide(dir) {
+  const next = current + dir;
+  if (next >= 0 && next < total) {
+    current = next;
+    updateSlide();
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') changeSlide(1);
+  if (e.key === 'ArrowLeft') changeSlide(-1);
+});
+
+updateSlide();
+</script>
+</body>
+</html>
