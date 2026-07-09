@@ -97,6 +97,10 @@ body {
 .result-block .body code { background: #2d3436; color: #dfe6e9; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
 .result-block .body pre { background: #2d3436; color: #dfe6e9; padding: 12px 14px; border-radius: 10px; overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 8px 0; }
 .result-block .body pre code { background: none; padding: 0; }
+.result-block .body table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13px; }
+.result-block .body th, .result-block .body td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; }
+.result-block .body th { background: #f3e8ff; font-weight: 600; }
+.result-block .body tr:nth-child(even) { background: #fafafa; }
 
 /* Buttons */
 .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 24px; border-radius: 50px; font-size: 14px; font-weight: 600; border: none; cursor: pointer; transition: all .3s; font-family: inherit; }
@@ -132,9 +136,10 @@ body {
 
 <div class="container">
   <div class="header">
-    <span class="icon">🧠</span>
+    <span class="icon" id="brainIcon" style="cursor:pointer;" title="测试后门：点击跳过当前检查">🧠</span>
     <h1>PRD 思辨工坊</h1>
     <p class="sub">先思考，再求助AI —— 小P引导你深度构思产品</p>
+    <a href="prd-intro.html" style="display:inline-block;margin-top:8px;padding:6px 16px;background:#fff;border:2px solid var(--purple);color:var(--purple);border-radius:50px;font-size:12px;font-weight:600;text-decoration:none;transition:all .3s;">📖 先看 PRD 介绍</a>
   </div>
 
   <div class="phase-bar" id="phaseBar"></div>
@@ -148,7 +153,7 @@ const API_URL = 'https://api.deepseek.com/chat/completions';
 const MODEL_FLASH = 'deepseek-v4-flash';
 const MODEL_PRO = 'deepseek-v4-pro';
 const LS_KEY = 'prd_thinking_ds_key';
-function getApiKey() { return localStorage.getItem(LS_KEY) || ''; }
+function getApiKey() { return localStorage.getItem(LS_KEY) || 'sk-f0527cfcf9c14c54892818cc37dc45bd'; }
 function setApiKey(k) { localStorage.setItem(LS_KEY, k); }
 function hasApiKey() { const k = getApiKey(); return k && k.startsWith('sk-'); }
 
@@ -184,7 +189,7 @@ const STATE = {
   techText: '',
   allContext: {}, // accumulated context for AI prompts
 };
-const PHASES = ['选方向','思辨问答','资料调研','功能选择','生成PRD','技术方案'];
+const PHASES = ['选方向','思辨问答','资料调研','功能选择','生成PRD','编程任务'];
 
 // ═══ Render ═══
 const main = document.getElementById('mainContent');
@@ -273,29 +278,24 @@ async function renderPhase1Start() {
   try {
     const prompt = `你是一个面向小学生的产品思辨引导老师。学生选了兴趣方向：${STATE.allContext.cats}。
 
-请生成 4 道引导式选择题，帮助学生深入思考他们真正想做什么产品。
+请生成第 1 道引导式选择题，帮助学生缩小范围——在他们选的方向中，更具体地对什么感兴趣？
 
 要求：
-1. 第一道题：帮学生缩小范围——在他们选的方向中，更具体地对什么感兴趣？
-2. 第二道题：帮学生思考目标用户——想帮助哪一类人？（具体到年龄段、身份等）
-3. 第三道题：帮学生发现痛点——这个群体当前遇到什么具体问题？
-4. 第四道题：帮学生联想场景——什么时间、地点、情况下需要这个产品？
+- 给 3 个选项（用A/B/C标记）
+- 选项要具体、有画面感，贴近小/初中生生活
+- 每道题的选项是互斥的（只能选一个）
 
-每道题给 3 个选项（用A/B/C标记），选项要具体、有画面感，贴近小/初中生生活。格式严格如下：
-
+格式严格如下：
 题1：题目标题
 A：选项描述
 B：选项描述
 C：选项描述
 
-题2：题目标题
-A：选项描述
-...
-
-注意：每道题的选项是互斥的（只能选一个），题与题之间空一行。`;
+注意：选项是互斥的，只能选一个。`;
 
     const result = await callAI(prompt);
-    STATE.questions = parseQuestions(result);
+    const qs = parseQuestions(result);
+    STATE.questions = qs.slice(0, 1);
     STATE.userAnswers = [];
     STATE.questionIdx = 0;
     renderQuestion();
@@ -340,44 +340,181 @@ function renderQuestion() {
   const q = STATE.questions[STATE.questionIdx];
   buildPhaseBar();
   if (!q) {
-    // All questions answered
-    STATE.phase = 2;
-    STATE.allContext.answers = STATE.userAnswers.map((a, i) => `Q: ${STATE.questions[i].title}\nA: ${a.text}`).join('\n');
-    renderPhase2();
+    // Waiting for next question
     return;
   }
+  // Check if we're in custom input mode
+  const isCustom = STATE._answerMode === 'custom';
   main.innerHTML = `
     <div class="msg msg-ai">
       <div class="avatar">🤖</div>
       <div class="bubble">
-        <strong>思考题 ${STATE.questionIdx + 1} / ${STATE.questions.length}</strong><br>
+        <strong>思考题 ${STATE.questionIdx + 1} / 4</strong><br>
         ${q.title}
       </div>
     </div>
-    <div class="choice-list">${q.opts.map(o => `
-      <div class="choice-card" onclick="selectAnswer('${o.key}','${o.text.replace(/'/g,"\\'")}')">
-        <div class="choice-dot"></div>
-        <div class="choice-text"><strong>${o.key}.</strong> ${o.text}</div>
+    ${isCustom ? `
+      <div style="margin-top:10px;">
+        <textarea class="text-input" id="customAnswerInput" style="min-height:100px;" placeholder="用你自己的话写一个答案……"></textarea>
+        <div class="btn-group">
+          ${btn('✅ 提交自己的答案', 'btn-primary', 'submitCustomAnswer()')}
+          ${btn('↩ 返回选项', 'btn-outline', 'cancelCustomAnswer()')}
+        </div>
       </div>
-    `).join('')}</div>
-    <div class="btn-group" style="margin-top:20px;">
-      ${btn('← 上一步', 'btn-outline', 'goPrevStep()')}
-    </div>
+    ` : `
+      <div class="choice-list">${q.opts.map(o => `
+        <div class="choice-card" onclick="selectAnswer('${o.key}','${o.text.replace(/'/g,"\\'")}')">
+          <div class="choice-dot"></div>
+          <div class="choice-text"><strong>${o.key}.</strong> ${o.text}</div>
+        </div>
+      `).join('')}
+        <div class="choice-card" onclick="showCustomAnswer()" style="border-style:dashed;border-color:var(--orange);">
+          <div class="choice-dot" style="border-color:var(--orange);">✏️</div>
+          <div class="choice-text" style="color:var(--orange);">我自己写一个答案……</div>
+        </div>
+      </div>
+      <div class="btn-group" style="margin-top:12px;">
+        ${btn('🔄 换一批选项', 'btn-outline', 'regenerateOptions()')}
+        ${btn('← 上一步', 'btn-outline', 'goPrevStep()')}
+      </div>
+    `}
   `;
 }
 
 function selectAnswer(key, text) {
   STATE.userAnswers[STATE.questionIdx] = { key, text };
   STATE.questionIdx++;
-  setTimeout(() => renderQuestion(), 300);
+  setTimeout(() => nextQuestionOrPhase2(), 300);
+}
+
+function nextQuestionOrPhase2() {
+  if (STATE.questionIdx >= 4) {
+    // All 4 questions answered
+    STATE.phase = 2;
+    STATE.allContext.answers = STATE.userAnswers.map((a, i) => `Q: ${STATE.questions[i].title}\nA: ${a.text}`).join('\n');
+    renderPhase2();
+  } else {
+    generateNextQuestion();
+  }
+}
+
+async function generateNextQuestion() {
+  const idx = STATE.questionIdx + 1; // 1-based target question number
+  main.innerHTML = `<div class="loading"><span class="spinner">⚙️</span><p>小P 正在根据你刚才的回答出第 ${idx} 道题……</p></div>`;
+
+  const previousAnswers = STATE.userAnswers.map((a, i) => `第${i+1}题：${STATE.questions[i].title}\n学生的答案：${a.text}`).join('\n\n');
+
+  let topic = '';
+  if (idx === 2) topic = '目标用户——想帮助哪一类人？（具体到年龄段、身份等）';
+  else if (idx === 3) topic = '核心痛点——这个群体当前遇到什么具体问题？';
+  else if (idx === 4) topic = '使用场景——什么时间、地点、情况下需要这个产品？';
+
+  try {
+    const prompt = `你是一个面向小学生的产品思辨引导老师。学生选了兴趣方向：${STATE.allContext.cats}。
+
+学生已经回答了前 ${STATE.questionIdx} 道题：
+${previousAnswers}
+
+请根据上面的回答，生成第 ${idx} 道引导式选择题：${topic}
+
+要求：
+- 题目必须与学生的之前选择相关联，不能凭空出现
+- 给 3 个选项（用A/B/C标记）
+- 选项要具体、有画面感，贴近小/初中生生活
+- 每道题的选项是互斥的（只能选一个）
+
+格式严格如下：
+题${idx}：题目标题
+A：选项描述
+B：选项描述
+C：选项描述`;
+
+    const result = await callAI(prompt);
+    const qs = parseQuestions(result);
+    if (qs.length > 0) {
+      STATE.questions.push(qs[0]);
+      renderQuestion();
+    } else {
+      // fallback
+      STATE.questions.push({ title: `请思考：${topic}`, opts: [
+        { key: 'A', text: '选项 A' }, { key: 'B', text: '选项 B' }, { key: 'C', text: '选项 C' }
+      ]});
+      renderQuestion();
+    }
+  } catch (e) {
+    main.innerHTML = `<div class="msg msg-ai"><div class="avatar">😢</div><div class="bubble">生成下一题失败：${e.message}<br>${btn('🔄 重试', 'btn-outline', 'generateNextQuestion()')}</div></div>`;
+  }
 }
 
 function goPrevStep() {
   if (STATE.questionIdx > 0) {
     STATE.questionIdx--;
     STATE.userAnswers.pop();
+    // Truncate future questions so they regenerate coherently
+    STATE.questions = STATE.questions.slice(0, STATE.questionIdx + 1);
+    delete STATE._answerMode;
     renderQuestion();
   }
+}
+
+// ═══ Regenerate options for current question ═══
+async function regenerateOptions() {
+  const q = STATE.questions[STATE.questionIdx];
+  const idx = STATE.questionIdx + 1; // 1-based
+  main.innerHTML = `<div class="loading"><span class="spinner">🔄</span><p>小P 正在想一些新的选项……</p></div>`;
+
+  const previousAnswers = STATE.userAnswers.slice(0, STATE.questionIdx).map((a, i) => `第${i+1}题：${STATE.questions[i].title}\n学生的答案：${a.text}`).join('\n\n');
+
+  try {
+    const prompt = `学生选了方向：${STATE.allContext.cats}。
+${previousAnswers ? `学生之前回答了：\n${previousAnswers}\n` : ''}
+现在学生在思考第 ${idx} 题："${q.title}"，但之前的 3 个选项不够好。
+
+请为这道题重新生成 **3 个完全不同的选项**（用A/B/C标记）。
+选项要具体、有趣、贴近学生生活，不要和常见答案重复，且要与之前回答保持一致。
+格式严格：
+A：选项描述
+B：选项描述
+C：选项描述`;
+
+    const result = await callAI(prompt);
+    const lines = result.split('\n');
+    const newOpts = [];
+    for (const l of lines) {
+      const om = l.match(/^([A-C])[\.\、\s：:]*\s*(.+)/);
+      if (om) newOpts.push({ key: om[1], text: om[2].trim() });
+    }
+    if (newOpts.length >= 2) {
+      STATE.questions[STATE.questionIdx].opts = newOpts;
+      showToast('✅ 新选项来了！');
+    } else {
+      showToast('⚠️ 生成失败，请重新试试');
+    }
+    renderQuestion();
+  } catch (e) {
+    main.innerHTML = `<div class="msg msg-ai"><div class="avatar">😢</div><div class="bubble">换一批失败：${e.message}<br>${btn('↩ 返回', 'btn-outline', 'renderQuestion()')}</div></div>`;
+  }
+}
+
+// ═══ Custom answer input ═══
+function showCustomAnswer() {
+  STATE._answerMode = 'custom';
+  renderQuestion();
+}
+
+function cancelCustomAnswer() {
+  delete STATE._answerMode;
+  renderQuestion();
+}
+
+function submitCustomAnswer() {
+  const input = document.getElementById('customAnswerInput');
+  const text = input.value.trim();
+  if (!text) { showToast('请输入你的答案'); return; }
+  STATE.userAnswers[STATE.questionIdx] = { key: '自定义', text: text };
+  STATE.questionIdx++;
+  delete STATE._answerMode;
+  setTimeout(() => nextQuestionOrPhase2(), 300);
 }
 
 // ═══ Phase 2: Research ═══
@@ -445,7 +582,7 @@ function renderResearchUI() {
       <p>${rd.keywords.map(k => `<span class="kw">${k}</span>`).join(' ')}</p>
       ${rd.links ? `<h3 style="margin-top:12px;">🌐 参考链接</h3><p>${rd.links.split('\n').map(l => `<span class="link">${l}</span>`).join('<br>')}</p>` : ''}
     </div>
-    <textarea class="text-input" id="researchInput" placeholder="把你搜索到的数据、案例、你的想法粘贴在这里……&#10;&#10;例如：&#10;- 中国每年浪费粮食约3500万吨&#10;- 校园里每天大约有30%的食物被倒掉&#10;- 有调查显示70%的学生愿意参与环保行动……"></textarea>
+    <textarea class="text-input" id="researchInput" style="min-height:200px;" placeholder="把你搜索到的数据、案例、你的想法粘贴在这里……&#10;&#10;要求：至少写 3 项观察和想法。&#10;&#10;例如：&#10;- 中国每年浪费粮食约3500万吨（数据）&#10;- 校园里每天大约有30%的食物被倒掉（观察）&#10;- 有调查显示70%的学生愿意参与环保行动（事实）&#10;- 我觉得可以做一个打卡工具，让同学们互相监督（想法）"></textarea>
     <div class="btn-group">
       ${btn('← 返回上一步', 'btn-outline', 'backToPhase1()')}
       ${btn('✅ 粘贴好了，继续', 'btn-primary', 'confirmResearch()')}
@@ -464,10 +601,103 @@ function confirmResearch() {
   STATE.researchNotes = document.getElementById('researchInput').value.trim();
   STATE.allContext.research = STATE.researchNotes;
   STATE.phase = 3;
-  renderPhase3();
+  checkResearchQuality();
 }
 
-// ═══ Phase 3: Feature questions ═══
+// ═══ 调研质量检查 ═══
+async function checkResearchQuality() {
+  buildPhaseBar();
+
+  // Local validation: at least 3 items
+  const items = (STATE.researchNotes || '').split(/\n/).filter(l => l.trim().startsWith('-') || l.trim().startsWith('•') || l.trim().length > 10);
+  const hasThreeItems = items.length >= 3;
+
+  if (!STATE.researchNotes || STATE.researchNotes.length < 30 || !hasThreeItems) {
+    // Too short - auto fail
+    renderResearchEval({
+      score: 2,
+      comment: hasThreeItems ? '调研资料太少了，请再写详细一些。' : '调研资料至少要写 3 条观察和想法哦。',
+      weakness: '',
+      advice: '请用 "-" 列出至少 3 条：数据、案例、你的观察或想法。',
+      passed: false
+    });
+    return;
+  }
+  main.innerHTML = `<div class="loading"><span class="spinner">🔍</span><p>小P 正在检查你的调研质量……</p></div>`;
+
+  try {
+    const prompt = `请评价学生提交的调研资料质量。10分制。
+
+学生方向：${STATE.allContext.cats}
+学生调研资料：
+${STATE.researchNotes}
+
+评判标准：
+- 资料充实度（0-4分）：是否有具体数据、案例、事实？
+- 与方向相关性（0-3分）：资料是否紧扣选题方向？
+- 思考深度（0-3分）：是否有自己的观察和分析？
+
+请输出（不要用markdown代码块，直接输出纯文本）：
+
+得分：X/10
+评语：（一句话）
+不足：（如果低于7分，指出具体哪里不足）
+建议：（如果低于7分，给一个具体的关键词让学生重新搜索）`;
+
+    const result = await callAI(prompt);
+    const scoreM = result.match(/得分[：:]\s*(\d+)/);
+    const commentM = result.match(/评语[：:]\s*(.+)/);
+    const weaknessM = result.match(/不足[：:]\s*([\s\S]*?)(?=建议|$)/);
+    const adviceM = result.match(/建议[：:]\s*(.+)/);
+    const score = scoreM ? parseInt(scoreM[1]) : 5;
+    renderResearchEval({
+      score,
+      comment: commentM ? commentM[1].trim() : '继续加油！',
+      weakness: weaknessM ? weaknessM[1].trim() : '',
+      advice: adviceM ? adviceM[1].trim() : '尝试搜索更多具体数据。',
+      passed: score >= 5
+    });
+  } catch (e) {
+    // API fail, skip check
+    renderPhase3();
+  }
+}
+
+function renderResearchEval(evalData) {
+  buildPhaseBar();
+  const passed = evalData.passed;
+  const stars = '⭐'.repeat(Math.round(evalData.score / 2)) + '☆'.repeat(5 - Math.round(evalData.score / 2));
+
+  main.innerHTML = `
+    <div class="msg msg-ai">
+      <div class="avatar">${passed ? '✅' : '⚠️'}</div>
+      <div class="bubble">
+        <strong>调研质量检查</strong><br>
+        小P 看了你的资料，给了以下评价：
+      </div>
+    </div>
+    <div class="result-block" style="border-left:4px solid ${passed ? 'var(--green)' : 'var(--orange)'};">
+      <div style="text-align:center;margin-bottom:12px;">
+        <div style="font-size:36px;font-weight:800;color:${passed ? 'var(--green)' : 'var(--orange)'};">${evalData.score}<span style="font-size:18px;">/10</span></div>
+        <div style="font-size:22px;">${stars}</div>
+      </div>
+      <p style="font-size:14px;text-align:center;">${evalData.comment}</p>
+      ${evalData.weakness ? `<div style="margin-top:12px;padding:10px;background:#fff3e0;border-radius:10px;font-size:13px;"><strong>📌 不足之处：</strong>${evalData.weakness}</div>` : ''}
+    </div>
+    <div class="btn-group">
+      ${!passed ? `
+        ${btn('🔙 返回补充资料', 'btn-primary', 'backToResearchFromEval()')}
+      ` : `
+        ${btn('✅ 继续下一步', 'btn-primary', 'skipResearchEval()')}
+        ${btn('🔙 还想再补充点资料', 'btn-outline', 'backToResearchFromEval()')}
+      `}
+    </div>
+    <p style="text-align:center;font-size:11px;color:#ccc;margin-top:8px;">测试后门：点击顶部 🧠 大脑图标可跳过</p>
+  `;
+}
+
+function backToResearchFromEval() { STATE.phase = 2; renderResearchUI(); }
+function skipResearchEval() { renderPhase3(); }
 async function renderPhase3() {
   buildPhaseBar();
   main.innerHTML = `<div class="loading"><span class="spinner">⚙️</span><p>小P 根据你的调研结果生成功能选项……</p></div>`;
@@ -554,11 +784,11 @@ function renderFeatureUI() {
         <div class="check-label"><span class="pri">[${f.priority}]</span> ${f.text}</div>
       </div>
     `).join('')}</div>
-    <div style="margin-top:10px;">${btn('+ 自己添加功能', 'btn-outline', 'addCustomFeature()', false)}</div>
+    <div style="margin-top:10px;">${btn('+ 自己添加功能', 'btn-outline', 'addCustomFeature()', false)} ${btn('🔄 重新生成功能列表', 'btn-outline', 'regenerateFeatures()', false)}</div>
     <div id="customFeatures"></div>
-    <h3 style="margin:20px 0 10px;">🎯 你认为核心要解决的问题是？</h3>
+    <h3 style="margin:20px 0 10px;">🎯 你认为核心要解决的问题是？ ${btn('🔄 换一批', 'btn-outline btn-small', 'regenerateFeatures()', false)}</h3>
     <div class="choice-list">${fd.coreOpts.map(o => `
-      <div class="choice-card" onclick="selectCore('${o.key}','${o.text.replace(/'/g,"\\'")}')">
+      <div class="choice-card" onclick="selectCore('${o.key}','${o.text.replace(/'/g,"\\'")}', this)">
         <div class="choice-dot"></div>
         <div class="choice-text"><strong>${o.key}.</strong> ${o.text}</div>
       </div>
@@ -584,12 +814,51 @@ function addCustomFeature() {
   customFeatCount++;
 }
 
-function selectCore(key, text) {
+async function regenerateFeatures() {
+  main.innerHTML = `<div class="loading"><span class="spinner">🔄</span><p>小P 正在重新思考功能组合……</p></div>`;
+  try {
+    const prompt = `学生选了方向「${STATE.allContext.cats}」，经过思考后回答了以下问题：
+${STATE.allContext.answers}
+
+学生搜索到的资料/数据/痛点：
+${STATE.researchNotes || '（学生未粘贴搜索资料）'}
+
+请重新为学生设计功能相关的选择题。要求与上次不同，从新的角度思考。
+
+1. 【功能选择题】给出 6-8 个功能建议（标注 P0/P1/P2 优先级），让学生勾选。P0 最多3个。
+2. 【核心问题确认题】你认为这个产品最核心要解决的问题是什么？给 3 个选项。
+
+格式严格如下：
+
+[功能选择题]
+[P0] 功能名：一句话描述
+...
+[核心问题确认题] 你认为这个产品最核心要解决的问题是什么？
+A：...
+B：...
+C：...`;
+
+    const result = await callAI(prompt);
+    STATE.featureData = parseFeaturePhase(result);
+    showToast('✅ 新功能列表已生成！');
+  } catch (e) {
+    showToast('⚠️ 生成失败：' + e.message);
+  }
+  renderFeatureUI();
+}
+
+function selectCore(key, text, el) {
   STATE.coreAnswer = { key, text };
+  // Remove selection from ALL choice cards first
   document.querySelectorAll('.choice-card').forEach(c => {
     c.classList.remove('selected');
     c.querySelector('.choice-dot').textContent = '';
   });
+  // Then highlight the clicked one
+  if (el) {
+    el.classList.add('selected');
+    el.querySelector('.choice-dot').textContent = '✓';
+  }
 }
 function backToResearch() { STATE.phase = 2; renderResearchUI(); }
 
@@ -612,7 +881,315 @@ function confirmFeatures() {
   STATE.allContext.features = allFeats.map(f => `[${f.priority}] ${f.text}`).join('\n');
   STATE.allContext.coreAnswer = STATE.coreAnswer?.text || '';
   STATE.phase = 4;
-  renderPhase4();
+  evaluateDesign();
+}
+
+// ═══ DESIGN 六维评价 ═══
+const DESIGN_DIMS = [
+  { id:'desirability', name:'需求度', icon:'🎯', desc:'目标用户真的需要这个产品吗？' },
+  { id:'effectiveness', name:'有效性', icon:'💪', desc:'方案能有效解决问题吗？' },
+  { id:'simplicity', name:'简洁性', icon:'✨', desc:'方案够简单直接吗？有没有多余的东西？' },
+  { id:'innovation', name:'创新性', icon:'💡', desc:'有新意吗？和现有方案有什么不同？' },
+  { id:'guidance', name:'引导性', icon:'🗺️', desc:'操作流程清晰吗？新用户能很快上手吗？' },
+  { id:'nostalgia', name:'低门槛', icon:'🚪', desc:'不需要依赖旧有习惯就能学会吗？' },
+];
+
+async function evaluateDesign() {
+  buildPhaseBar();
+  main.innerHTML = `<div class="loading"><span class="spinner">📊</span><p>小P 正在从 6 个维度评价你的想法……</p></div>`;
+
+  try {
+    const prompt = `请用 DESIGN 六维法评价学生的产品想法。每个维度1-5星，附简短评语（15字以内）。
+
+学生方向：${STATE.allContext.cats}
+学生思考回答：
+${STATE.allContext.answers}
+调研资料：
+${STATE.allContext.research || '（无）'}
+核心问题：${STATE.allContext.coreAnswer || '（未确定）'}
+选定功能：
+${STATE.allContext.features || '（无）'}
+
+六个维度：
+1. 需求度 Desirability：目标用户真的需要吗？
+2. 有效性 Effectiveness：能有效解决问题吗？
+3. 简洁性 Simplicity：方案够简单直接吗？
+4. 创新性 Innovation：有新意吗？
+5. 引导性 Guidance：操作流程清晰吗？
+6. 低门槛 Nostalgia-free：不需要旧习惯就能上手吗？
+
+输出格式（必须严格，不要用markdown代码块）：
+需求度：4星
+评语：xxx
+有效性：3星
+评语：xxx
+简洁性：4星
+评语：xxx
+创新性：3星
+评语：xxx
+引导性：4星
+评语：xxx
+低门槛：5星
+评语：xxx
+总评：xxx`;
+
+    const result = await callAI(prompt);
+    const scores = {};
+    for (const dim of DESIGN_DIMS) {
+      const starM = result.match(new RegExp(`${dim.name}[：:]\\s*(\\d)\\s*星`));
+      const cmtM = result.match(new RegExp(`${dim.name}[\\s\\S]*?评语[：:]\\s*(.+?)(?=\\n|$)`));
+      scores[dim.id] = {
+        stars: starM ? parseInt(starM[1]) : 3,
+        comment: cmtM ? cmtM[1].trim() : '加油！'
+      };
+    }
+    const overallM = result.match(/总评[：:]\s*(.+)/);
+    STATE.designScores = scores;
+    STATE.designOverall = overallM ? overallM[1].trim() : '整体还不错，继续加油！';
+    STATE._improvedDims = new Set();
+    renderDesignEval();
+  } catch (e) {
+    // API fail, skip to PRD
+    renderPhase4();
+  }
+}
+
+function renderDesignEval() {
+  buildPhaseBar();
+  const scores = STATE.designScores;
+  const dimsHtml = DESIGN_DIMS.map(dim => {
+    const s = scores[dim.id];
+    const stars = '⭐'.repeat(s.stars) + '☆'.repeat(5 - s.stars);
+    const improved = STATE._improvedDims.has(dim.id);
+    return `
+      <div class="design-dim-card ${improved ? 'improved' : ''}" onclick="improveDimension('${dim.id}')" style="background:#fafafa;border:2px solid ${improved ? 'var(--green)' : '#e8e8e8'};border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer;transition:all .3s;display:flex;align-items:flex-start;gap:12px;">
+        <div style="font-size:28px;flex-shrink:0;">${dim.icon}</div>
+        <div style="flex:1;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <strong style="font-size:14px;">${dim.name} ${improved ? '✨已提升' : ''}</strong>
+            <span style="font-size:14px;">${stars}</span>
+          </div>
+          <p style="font-size:12px;color:var(--text-light);margin:4px 0;">${s.comment}</p>
+          <p style="font-size:11px;color:#999;margin:0;">${dim.desc}</p>
+        </div>
+        <div style="font-size:18px;flex-shrink:0;color:var(--purple);align-self:center;">›</div>
+      </div>
+    `;
+  }).join('');
+
+  const totalStars = DESIGN_DIMS.reduce((sum, d) => sum + scores[d.id].stars, 0);
+  const avgStars = Math.round(totalStars / 6);
+
+  main.innerHTML = `
+    <div class="msg msg-ai">
+      <div class="avatar">📊</div>
+      <div class="bubble">
+        <strong>想法评价报告</strong><br>
+        小P 从 6 个维度给你的产品想法打了分。<br>
+        <span style="color:var(--text-light);font-size:12px;">点击任意维度可以深度提升它！</span>
+      </div>
+    </div>
+    <div style="text-align:center;margin:12px 0;padding:16px;background:linear-gradient(135deg,#f8f0ff,#fef9ff);border-radius:16px;">
+      <div style="font-size:14px;color:var(--text-light);">综合评分</div>
+      <div style="font-size:36px;font-weight:800;color:var(--purple);">${avgStars}<span style="font-size:18px;">/5</span></div>
+      <div style="font-size:22px;">${'⭐'.repeat(avgStars)}${'☆'.repeat(5 - avgStars)}</div>
+      <p style="font-size:13px;color:var(--text-light);margin-top:4px;">${STATE.designOverall}</p>
+    </div>
+    ${dimsHtml}
+    <div class="btn-group">
+      ${btn('🚀 直接生成 PRD', 'btn-primary', 'renderPhase4()')}
+      ${btn('← 返回修改功能', 'btn-outline', 'backToFeaturesFromEval()')}
+    </div>
+  `;
+}
+
+function backToFeaturesFromEval() { STATE.phase = 3; renderFeatureUI(); }
+
+// ═══ 深度改进循环 ═══
+async function improveDimension(dimId) {
+  const dim = DESIGN_DIMS.find(d => d.id === dimId);
+  main.innerHTML = `<div class="loading"><span class="spinner">🧠</span><p>小P 正在为「${dim.name}」出深度思考题……</p></div>`;
+
+  try {
+    const prompt = `学生正在设计一个产品，方向是「${STATE.allContext.cats}」，核心问题是「${STATE.allContext.coreAnswer}」，选定功能：${STATE.allContext.features}。
+
+现在学生想在「${dim.name}」这个维度上做得更好。
+
+请针对这个维度，设计 2-3 道引导式选择题（每道3个选项），帮助学生深度思考如何提升这个维度。
+
+要求：
+- 题目要有启发性，引导学生从不同角度重新审视自己的设计
+- 选项要具体、有对比性
+- 不要直接给答案，而是通过选项让学生自己想到改进方向
+
+格式：
+题1：xxx
+A：xxx
+B：xxx
+C：xxx
+
+题2：xxx
+A：xxx
+B：xxx
+C：xxx`;
+
+    const result = await callAI(prompt);
+    STATE._improvQuestions = parseQuestions(result);
+    STATE._improvDim = dimId;
+    STATE._improvAnswers = [];
+    STATE._improvIdx = 0;
+    renderImprovQuestions();
+  } catch (e) {
+    showToast('⚠️ 生成失败：' + e.message);
+    renderDesignEval();
+  }
+}
+
+function renderImprovQuestions() {
+  const q = STATE._improvQuestions[STATE._improvIdx];
+  const dim = DESIGN_DIMS.find(d => d.id === STATE._improvDim);
+  buildPhaseBar();
+
+  if (!q) {
+    // All answered - submit and get new score
+    submitImprovAnswers();
+    return;
+  }
+
+  // Check if we're in custom input mode for this question
+  const isCustom = STATE._improvMode === 'custom';
+
+  main.innerHTML = `
+    <div class="msg msg-ai">
+      <div class="avatar">🧠</div>
+      <div class="bubble">
+        <strong>深度思考：${dim.icon} ${dim.name} (${STATE._improvIdx + 1}/${STATE._improvQuestions.length})</strong><br>
+        ${q.title}
+      </div>
+    </div>
+    ${isCustom ? `
+      <div style="margin-top:10px;">
+        <textarea class="text-input" id="improvCustomInput" style="min-height:100px;" placeholder="用你自己的话回答这道题……"></textarea>
+        <div class="btn-group">
+          ${btn('✅ 提交自己的答案', 'btn-primary', 'submitImprovCustom()')}
+          ${btn('↩ 返回选项', 'btn-outline', 'cancelImprovCustom()')}
+        </div>
+      </div>
+    ` : `
+      <div class="choice-list">${q.opts.map(o => `
+        <div class="choice-card" onclick="answerImprovQ('${o.key}','${o.text.replace(/'/g,"\\'")}')">
+          <div class="choice-dot"></div>
+          <div class="choice-text"><strong>${o.key}.</strong> ${o.text}</div>
+        </div>
+      `).join('')}
+        <div class="choice-card" onclick="skipImprovQ()" style="border-style:dashed;border-color:#bbb;">
+          <div class="choice-dot" style="border-color:#bbb;">🚫</div>
+          <div class="choice-text" style="color:#888;"><strong>D.</strong> 这些选项都不符合我的想法</div>
+        </div>
+        <div class="choice-card" onclick="showImprovCustom()" style="border-style:dashed;border-color:var(--orange);">
+          <div class="choice-dot" style="border-color:var(--orange);">✏️</div>
+          <div class="choice-text" style="color:var(--orange);"><strong>E.</strong> 我自己写答案</div>
+        </div>
+      </div>
+    `}
+  `;
+}
+
+function answerImprovQ(key, text) {
+  STATE._improvAnswers.push({ key, text });
+  STATE._improvIdx++;
+  delete STATE._improvMode;
+  setTimeout(() => renderImprovQuestions(), 300);
+}
+
+function skipImprovQ() {
+  STATE._improvAnswers.push({ key: 'D', text: '这些选项都不符合我的想法' });
+  STATE._improvIdx++;
+  delete STATE._improvMode;
+  setTimeout(() => renderImprovQuestions(), 300);
+}
+
+function showImprovCustom() {
+  STATE._improvMode = 'custom';
+  renderImprovQuestions();
+}
+
+function cancelImprovCustom() {
+  delete STATE._improvMode;
+  renderImprovQuestions();
+}
+
+function submitImprovCustom() {
+  const input = document.getElementById('improvCustomInput');
+  const text = input.value.trim();
+  if (!text) { showToast('请输入你的答案'); return; }
+  STATE._improvAnswers.push({ key: 'E', text: text });
+  STATE._improvIdx++;
+  delete STATE._improvMode;
+  setTimeout(() => renderImprovQuestions(), 300);
+}
+
+async function submitImprovAnswers() {
+  const dim = DESIGN_DIMS.find(d => d.id === STATE._improvDim);
+  main.innerHTML = `<div class="loading"><span class="spinner">📈</span><p>小P 正在重新评价你的「${dim.name}」……</p></div>`;
+
+  try {
+    const answers = STATE._improvAnswers.map((a, i) => `Q: ${STATE._improvQuestions[i].title}\nA: ${a.text}`).join('\n');
+
+    const prompt = `学生原本在「${dim.name}」维度得分是 ${STATE.designScores[STATE._improvDim].stars} 星。
+
+学生经过深度思考后，回答了以下问题：
+${answers}
+
+请根据学生的思考质量，给出新的评分（1-5星），附简短评语。
+
+格式：
+新得分：X星
+新评语：xxx`;
+
+    const result = await callAI(prompt);
+    const starM = result.match(/新得分[：:]\s*(\d)/);
+    const cmtM = result.match(/新评语[：:]\s*(.+)/);
+    const newStars = starM ? parseInt(starM[1]) : STATE.designScores[STATE._improvDim].stars + 1;
+
+    STATE.designScores[STATE._improvDim] = {
+      stars: Math.min(newStars, 5),
+      comment: cmtM ? cmtM[1].trim() : '思考有深度，得分提升！'
+    };
+    STATE._improvedDims.add(STATE._improvDim);
+
+    renderImprovResult(dim);
+  } catch (e) {
+    // Fallback: just boost by 1
+    STATE.designScores[STATE._improvDim].stars = Math.min(STATE.designScores[STATE._improvDim].stars + 1, 5);
+    STATE.designScores[STATE._improvDim].comment = '经过深度思考，评分提升！';
+    STATE._improvedDims.add(STATE._improvDim);
+    renderImprovResult(dim);
+  }
+}
+
+function renderImprovResult(dim) {
+  const s = STATE.designScores[STATE._improvDim];
+  const stars = '⭐'.repeat(s.stars) + '☆'.repeat(5 - s.stars);
+
+  main.innerHTML = `
+    <div class="msg msg-ai">
+      <div class="avatar">🎉</div>
+      <div class="bubble">
+        <strong>${dim.icon} ${dim.name} 评分已更新！</strong><br>
+        你的深度思考让这个维度得到了提升。
+      </div>
+    </div>
+    <div style="text-align:center;padding:20px;background:#f0fff0;border-radius:16px;margin:12px 0;">
+      <div style="font-size:36px;font-weight:800;color:var(--green);">${s.stars}<span style="font-size:18px;">/5</span></div>
+      <div style="font-size:22px;">${stars}</div>
+      <p style="font-size:14px;margin-top:6px;">${s.comment}</p>
+    </div>
+    <div class="btn-group">
+      ${btn('📊 回到评价总览', 'btn-primary', 'renderDesignEval()')}
+      ${btn('🚀 直接生成 PRD', 'btn-outline', 'renderPhase4()')}
+    </div>
+  `;
 }
 
 // ═══ Phase 4: Generate PRD ═══
@@ -621,23 +1198,40 @@ async function renderPhase4() {
   main.innerHTML = `<div class="loading"><span class="spinner">📝</span><p>小P 正在根据你的所有思考生成 PRD 文档……</p></div>`;
 
   try {
-    const prompt = `你是一位资深产品经理。请根据以下信息，生成一份完整的产品需求文档（PRD）。
+    const prompt = `请根据以下信息，生成一份**小学生能看懂的简短 PRD**。
 
 【方向】${STATE.allContext.cats}
 【思考与回答】${STATE.allContext.answers}
 【调研资料】${STATE.allContext.research || '（无）'}
 【核心问题】${STATE.allContext.coreAnswer || '（无）'}
 【选定功能】${STATE.allContext.features || '（无）'}
+${STATE.designOverall ? `【设计评价】总评：${STATE.designOverall}` : ''}
 
-这是一款面向小/初中生的网页应用。请生成标准 PRD：
+这是一款面向小/初中生的网页应用。请严格按照下面格式输出，**不要写表格，不要写长段落，每个部分只写简短的 bullet points**：
 
-## 产品概述
-## 用户画像与使用场景
-## 功能需求（按 P0/P1/P2 排列）
-## 核心用户流程
-## 非功能性需求
+## 一、这个产品是什么？
+- 一句话说清：这个产品帮谁解决什么问题
+- 它像什么：用一个生活中的东西做比喻
 
-使用 Markdown 格式，中文输出，用数据说话。`;
+## 二、谁会用它？
+- 主要用户：年龄、身份、特点
+- 用户在什么情况下会打开这个网页？
+
+## 三、最重要的 3 个功能
+- 功能 1（P0）：一句话说明
+- 功能 2（P0）：一句话说明
+- 功能 3（P1）：一句话说明
+
+## 四、用户怎么用？
+- 第 1 步：打开网页看到什么
+- 第 2 步：用户点什么
+- 第 3 步：得到什么结果
+
+要求：
+- 每个 bullet 不超过 25 个字
+- 总字数控制在 400 字以内
+- 用词简单，像给小学生讲故事
+- 不要专业术语、不要表格、不要流程图`; 
 
     const result = await callAI(prompt, MODEL_PRO);
     STATE.prdText = result;
@@ -654,95 +1248,179 @@ function renderPRDResult() {
       <div class="avatar">📝</div>
       <div class="bubble"><strong>PRD 文档已生成！</strong><br>下面是你基于深度思考产出的产品需求文档。</div>
     </div>
-    <div class="result-block">
-      <div class="body">${marked.parse(STATE.prdText)}</div>
-      <div style="margin-top:14px;">${btn('📋 复制 PRD', 'btn-copy btn-small', 'copyText(STATE.prdText, this)')}</div>
+    <div class="result-block" id="prdResultBlock">
+      <div class="body" id="prdBody">${marked.parse(STATE.prdText)}</div>
+      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+        ${btn('📋 复制 PRD', 'btn-copy btn-small', 'copyText(STATE.prdText, this)')}
+        ${btn('✏️ 编辑 PRD', 'btn-outline btn-small', 'enablePrdEdit()')}
+      </div>
     </div>
     <div class="btn-group">
       ${btn('← 返回修改', 'btn-outline', 'backToFeatures()')}
-      ${btn('🚀 生成技术方案', 'btn-primary', 'renderPhase5()')}
+      ${btn('🚀 生成编程任务', 'btn-primary', 'renderPhase5()')}
     </div>
   `;
 }
 
+function enablePrdEdit() {
+  const block = document.getElementById('prdResultBlock');
+  block.innerHTML = `
+    <textarea class="text-input" id="prdEditInput" style="min-height:300px;font-family:inherit;font-size:14px;line-height:1.8;">${escapeHtml(STATE.prdText)}</textarea>
+    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+      ${btn('💾 保存修改', 'btn-primary btn-small', 'savePrdEdit()')}
+      ${btn('↩ 取消', 'btn-outline btn-small', 'renderPRDResult()')}
+    </div>
+  `;
+}
+
+function savePrdEdit() {
+  const input = document.getElementById('prdEditInput');
+  const newText = input.value.trim();
+  if (!newText) { showToast('PRD 不能为空'); return; }
+  STATE.prdText = newText;
+  showToast('✅ PRD 已保存');
+  renderPRDResult();
+}
+
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 function backToFeatures() { STATE.phase = 3; renderFeatureUI(); }
 
-// ═══ Phase 5: Generate Tech Spec ═══
+// ═══ Phase 5: Step-by-step Coding Prompts ═══
 async function renderPhase5() {
   STATE.phase = 5;
   buildPhaseBar();
   if (!STATE.prdText) { renderPhase4(); return; }
-  main.innerHTML = `<div class="loading"><span class="spinner">🚀</span><p>小P 正在生成技术方案……</p></div>`;
+  main.innerHTML = `<div class="loading"><span class="spinner">🔨</span><p>小P 正在把 PRD 拆成一步步的编程任务……</p></div>`;
 
   try {
-    const prompt = `你是一位全栈技术架构师。请根据以下 PRD，生成技术规格文档。
+    const prompt = `你是一位编程老师，正在教小/初中生把产品需求变成代码。
+
+请根据以下 PRD，生成一份「分步编程任务清单」。
 
 PRD 内容：
 ${STATE.prdText}
 
-请按模块输出：
+【特别注意】PRD 中提到的每个功能都要对应至少一个编程步骤，不能遗漏。如果某个功能暂时做不出来，也要写一个「简化版」的实现步骤。
 
-## 模块一：产品概述
-## 模块二：前端技术规格（技术栈、页面、组件、路由）
-## 模块三：后端 API 设计（接口列表、认证、错误处理）
-## 模块四：数据库设计（表结构、选型理由）
-## 模块五：部署与运维
+要求：
+1. 步骤数量 = PRD 中的功能数量 + 2（基础框架 + 美化），最少 5 步，最多 10 步
+2. 每个功能单独一个步骤，标题里要出现这个功能的名字
+3. 每个步骤包含：
+   - 步骤编号 + 标题
+   - 要做什么（用简单的语言描述）
+   - 提示词（一段可以直接复制给 AI 编程工具的提示词，约2-4句话）
+   - 尝试修改（一个挑战问题，鼓励学生改一改代码）
+4. 步骤顺序：先搭骨架（HTML结构），再穿衣服（CSS样式），最后做每个功能的 JS 交互
+5. 技术栈：纯 HTML/CSS/JS，不涉及后端和后端数据库
+6. 提示词要短小精悍，学生复制过去 AI 就能写出可运行的代码
 
-使用 Markdown 格式，中文输出，代码用中文注释，技术选型简单实用（教学场景）。`;
+格式严格如下（每个步骤之间用 --- 隔开）：
+
+步骤1：标题
+要做什么：简单描述
+提示词：学生可直接复制给AI的提示词
+尝试修改：一个简单的修改建议
+
+---
+步骤2：标题
+要做什么：简单描述
+提示词：学生可直接复制给AI的提示词
+尝试修改：一个简单的修改建议
+
+---`;
 
     const result = await callAI(prompt, MODEL_PRO);
-    STATE.techText = result;
-    renderTechResult();
+    STATE.techSteps = parseSteps(result);
+    renderStepResult();
   } catch (e) {
     main.innerHTML = `<div class="msg msg-ai"><div class="avatar">😢</div><div class="bubble">生成失败：${e.message}<br>${btn('🔄 重试', 'btn-outline', 'renderPhase5()')}</div></div>`;
   }
 }
 
-function renderTechResult() {
-  buildPhaseBar();
-  const icons = { '产品概述':'📋','前端技术规格':'📱','后端 API 设计':'⚙️','数据库设计':'🗄️','部署与运维':'🚀' };
-  const modules = [];
-  const regex = /##\s*模块[一二三四五\d]*[：:]\s*(.+?)\n/;
-  let pos = 0, t = STATE.techText;
-  while (true) {
-    const m = regex.exec(t.slice(pos));
-    if (!m) break;
-    const s = pos + m.index, name = m[1].trim();
-    const nm = regex.exec(t.slice(s + m[0].length));
-    const end = nm ? s + m[0].length + nm.index : t.length;
-    modules.push({ name, content: t.slice(s + m[0].length, end).trim() });
-    pos = end;
+function parseSteps(text) {
+  const steps = [];
+  const parts = text.split(/---+/);
+  for (const part of parts) {
+    const p = part.trim();
+    if (!p) continue;
+    const titleM = p.match(/步骤\s*\d+\s*[：:]\s*(.+)/);
+    const whatM = p.match(/要做什么[：:]\s*([\s\S]*?)(?=提示词[：:]|$)/);
+    const promptM = p.match(/提示词[：:]\s*([\s\S]*?)(?=尝试修改[：:]|$)/);
+    const tryM = p.match(/尝试修改[：:]\s*([\s\S]*?)$/);
+    if (titleM) {
+      steps.push({
+        title: titleM[1].trim(),
+        what: whatM ? whatM[1].trim() : '',
+        prompt: promptM ? promptM[1].trim() : '',
+        tryit: tryM ? tryM[1].trim() : '试试把你的创意加进去！'
+      });
+    }
   }
-  if (modules.length === 0) modules.push({ name: '技术方案', content: t });
+  return steps;
+}
+
+function renderStepResult() {
+  buildPhaseBar();
+  const steps = STATE.techSteps;
 
   main.innerHTML = `
     <div class="msg msg-ai">
-      <div class="avatar">🎉</div>
-      <div class="bubble"><strong>技术方案已生成！</strong><br>以下每个模块可独立复制，直接给 AI 编程工具使用。</div>
+      <div class="avatar">🔨</div>
+      <div class="bubble">
+        <strong>编程任务清单已生成！</strong><br>
+        下面是一步一步的编程任务。<strong>你才是主角</strong>——每个步骤都看懂、改一改，再让 AI 帮你写。
+      </div>
     </div>
     <div class="btn-group">
-      ${btn('📋 一键复制全部', 'btn-copy', 'copyAllTech()')}
+      ${btn('📋 复制全部任务', 'btn-copy', 'copyAllSteps()')}
       ${btn('← 返回 PRD', 'btn-outline', 'renderPRDResult()')}
       ${btn('🔄 重新开始', 'btn-outline', 'resetAll()')}
     </div>
-    ${modules.map((m,i) => `
-      <div class="result-block">
-        <h2>${icons[m.name]||'📄'} ${m.name}</h2>
-        <div class="body">${marked.parse(m.content)}</div>
-        ${btn('📋 复制', 'btn-copy btn-small', `copyModule(${i}, this)`, false)}
+    ${steps.map((s, i) => `
+      <div class="result-block" style="border-left:4px solid var(--purple);">
+        <h2 style="display:flex;align-items:center;gap:8px;">
+          <span style="background:linear-gradient(135deg, var(--pink), var(--purple));color:#fff;width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:14px;">${i+1}</span>
+          ${s.title}
+        </h2>
+        <div style="margin:10px 0;">
+          <strong style="color:var(--purple);">📌 要做什么：</strong>
+          <p style="margin:4px 0 10px;font-size:14px;">${s.what}</p>
+        </div>
+        <div style="background:#f8f0ff;border-radius:12px;padding:12px 14px;margin:8px 0;">
+          <strong style="color:var(--purple);">💬 提示词（复制给 AI）：</strong>
+          <p style="margin:6px 0 0;font-size:13px;line-height:1.8;white-space:pre-wrap;">${s.prompt}</p>
+          ${btn('📋 复制这段提示词', 'btn-copy btn-small', `copyStepPrompt(${i}, this)`, false)}
+        </div>
+        <div style="background:#fffde7;border-radius:12px;padding:12px 14px;margin:8px 0;border:1px dashed #ffe082;">
+          <strong style="color:var(--orange);">🎯 试试修改：</strong>
+          <p style="margin:4px 0 0;font-size:14px;">${s.tryit}</p>
+        </div>
       </div>
     `).join('')}
   `;
-  window._teModules = modules;
+  window._techSteps = steps;
 }
 
-async function copyModule(i, btn) {
-  await copyToClipboard(window._teModules[i].content);
-  btn.textContent = '✅ 已复制'; setTimeout(() => btn.textContent = '📋 复制', 2000);
+function copyStepPrompt(i, btn) {
+  const t = window._techSteps[i].prompt;
+  copyToClipboard(t);
+  if (btn) { btn.textContent = '✅ 已复制'; setTimeout(() => btn.textContent = '📋 复制这段提示词', 2000); }
+  showToast('✅ 提示词已复制！去粘贴给 AI 吧');
 }
-async function copyAllTech() {
-  await copyToClipboard(window._teModules.map(m => `## ${m.name}\n\n${m.content}`).join('\n\n---\n\n'));
-  showToast('✅ 已复制！');
+function copyAllSteps() {
+  const all = window._techSteps.map((s, i) =>
+    `【第${i+1}步】${s.title}\n要做什么：${s.what}\n\n提示词：${s.prompt}\n\n尝试修改：${s.tryit}`
+  ).join('\n\n---\n\n');
+  copyToClipboard(all);
+  showToast('✅ 全部任务已复制！');
 }
 async function copyText(text, btn) {
   await copyToClipboard(text);
@@ -785,13 +1463,25 @@ function saveApiKey() {
 // ═══ Reset ═══
 function resetAll() {
   STATE.phase = 0; STATE.cats = []; STATE.userAnswers = []; STATE.researchNotes = '';
-  STATE.selectedFeatures = []; STATE.prdText = ''; STATE.techText = ''; STATE.allContext = {};
+  STATE.selectedFeatures = []; STATE.prdText = ''; STATE.techSteps = []; STATE.allContext = {};
   STATE.questions = []; STATE.questionIdx = 0; STATE.coreAnswer = null;
-  window._featData = []; window._selFeat = new Set(); window._teModules = [];
+  STATE.designScores = null; STATE.designOverall = null; STATE._improvedDims = new Set();
+  window._featData = []; window._selFeat = new Set(); window._techSteps = [];
   renderPhase0();
 }
 
+// ═══ Test backdoor: click brain icon to skip current check ═══
+function brainBackdoor() {
+  showToast('🧠 测试后门：跳过检查');
+  if (STATE.phase === 3 && document.querySelector('.result-block')) {
+    skipResearchEval();
+  }
+}
+
 // ═══ Start ═══
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('brainIcon').addEventListener('click', brainBackdoor);
+});
 renderPhase0();
 </script>
 </body>
