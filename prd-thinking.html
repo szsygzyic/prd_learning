@@ -139,12 +139,12 @@ body {
     <span class="icon" id="brainIcon" style="cursor:pointer;" title="测试后门：点击跳过当前检查">🧠</span>
     <h1>PRD 思辨工坊</h1>
     <p class="sub">先思考，再求助AI —— 小P引导你深度构思产品</p>
-    <a href="prd-intro.html" style="display:inline-block;margin-top:8px;padding:6px 16px;background:#fff;border:2px solid var(--purple);color:var(--purple);border-radius:50px;font-size:12px;font-weight:600;text-decoration:none;transition:all .3s;">📖 先看 PRD 介绍</a>
+    <a href="prd-intro.html" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:8px;padding:6px 16px;background:#fff;border:2px solid var(--purple);color:var(--purple);border-radius:50px;font-size:12px;font-weight:600;text-decoration:none;transition:all .3s;">📖 先看 PRD 介绍</a>
   </div>
 
   <div class="phase-bar" id="phaseBar"></div>
   <div class="main" id="mainContent"></div>
-  <div class="footer">PRD 思辨工坊 · 深度思考引导模式</div>
+  <div class="footer">PRD 思辨工坊 · 深度思考引导模式 · <a href="javascript:void(0)" onclick="resetAll()" style="color:var(--text-light);">🔄 重新开始</a></div>
 </div>
 
 <script>
@@ -166,6 +166,80 @@ async function callAI(prompt, model) {
   if (!res.ok) throw new Error('API 错误: ' + res.status);
   const data = await res.json();
   return data.choices[0].message.content;
+}
+
+// ═══ State persistence ═══
+const SAVE_KEY = 'prd_thinking_state';
+function saveState() {
+  const data = {
+    phase: STATE.phase,
+    ageGroupId: STATE.ageGroup?.id || null,
+    cats: STATE.cats,
+    questions: STATE.questions,
+    questionIdx: STATE.questionIdx,
+    userAnswers: STATE.userAnswers,
+    researchNotes: STATE.researchNotes,
+    researchData: STATE.researchData,
+    featureData: STATE.featureData,
+    selectedFeatures: STATE.selectedFeatures,
+    coreAnswer: STATE.coreAnswer,
+    prdText: STATE.prdText,
+    techSteps: STATE.techSteps,
+    designScores: STATE.designScores,
+    designOverall: STATE.designOverall,
+    improvedDims: Array.from(STATE._improvedDims || []),
+    improvQuestions: STATE._improvQuestions,
+    improvDim: STATE._improvDim,
+    improvIdx: STATE._improvIdx,
+    improvAnswers: STATE._improvAnswers,
+    improvMode: STATE._improvMode,
+    allContext: STATE.allContext,
+    featData: window._featData || [],
+    selFeat: Array.from(window._selFeat || []),
+    teModules: window._teModules || [],
+  };
+  localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+}
+
+function loadState() {
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (!raw) return false;
+  try {
+    const data = JSON.parse(raw);
+    STATE.phase = data.phase || 0;
+    STATE.ageGroup = data.ageGroupId ? AGE_GROUPS.find(g => g.id === data.ageGroupId) : null;
+    STATE.cats = data.cats || [];
+    STATE.questions = data.questions || [];
+    STATE.questionIdx = data.questionIdx || 0;
+    STATE.userAnswers = data.userAnswers || [];
+    STATE.researchNotes = data.researchNotes || '';
+    STATE.researchData = data.researchData || null;
+    STATE.featureData = data.featureData || null;
+    STATE.selectedFeatures = data.selectedFeatures || [];
+    STATE.coreAnswer = data.coreAnswer || null;
+    STATE.prdText = data.prdText || '';
+    STATE.techSteps = data.techSteps || [];
+    STATE.designScores = data.designScores || null;
+    STATE.designOverall = data.designOverall || null;
+    STATE._improvedDims = new Set(data.improvedDims || []);
+    STATE._improvQuestions = data.improvQuestions || [];
+    STATE._improvDim = data.improvDim || null;
+    STATE._improvIdx = data.improvIdx || 0;
+    STATE._improvAnswers = data.improvAnswers || [];
+    STATE._improvMode = data.improvMode || null;
+    STATE.allContext = data.allContext || {};
+    window._featData = data.featData || [];
+    window._selFeat = new Set(data.selFeat || []);
+    window._teModules = data.teModules || [];
+    return true;
+  } catch (e) {
+    console.error('loadState failed', e);
+    return false;
+  }
+}
+
+function clearSavedState() {
+  localStorage.removeItem(SAVE_KEY);
 }
 
 // ═══ Categories ═══
@@ -227,7 +301,7 @@ function renderAgeSelect() {
       <div class="avatar">👋</div>
       <div class="bubble">
         <strong>开始前，先告诉小P你读几年级？</strong><br>
-        这样小P 才能出适合你年龄的思考题，不会太低幼也不会太复杂。
+        这样小P 才能出适合你的思考题。
       </div>
     </div>
     <div class="choice-list" style="margin-top:16px;">${AGE_GROUPS.map(g => `
@@ -235,11 +309,12 @@ function renderAgeSelect() {
         <div class="choice-dot"></div>
         <div class="choice-text">
           <strong>${g.label}</strong>
-          <span style="color:var(--text-light);font-size:12px;display:block;">${g.age} · ${g.desc}</span>
+          <span style="color:var(--text-light);font-size:12px;display:block;">${g.age}</span>
         </div>
       </div>
     `).join('')}</div>
   `;
+  saveState();
 }
 
 function selectAgeGroup(id) {
@@ -280,6 +355,7 @@ function renderPhase0() {
     grid.appendChild(d);
   });
   updateCatUI();
+  saveState();
 }
 
 function toggleCat(id) {
@@ -387,7 +463,10 @@ function renderQuestion() {
   const q = STATE.questions[STATE.questionIdx];
   buildPhaseBar();
   if (!q) {
-    // Waiting for next question
+    // If in question phase and question missing, regenerate it
+    if (STATE.phase === 1 && STATE.questionIdx < 4 && STATE.questionIdx > 0) {
+      generateNextQuestion();
+    }
     return;
   }
   // Check if we're in custom input mode
@@ -426,6 +505,7 @@ function renderQuestion() {
       </div>
     `}
   `;
+  saveState();
 }
 
 function selectAnswer(key, text) {
@@ -587,22 +667,15 @@ ${STATE.allContext.answers}
 
 请为学生设计一个「资料搜索任务」。要求：
 1. 给 5 个搜索关键词（让学生去百度或浏览器里搜）
-2. 给 2-3 个参考网站链接（真实的、适合学生查阅资料的网站）
-3. 写一个简短的任务说明，告诉学生该搜什么、关注哪些数据和事实
-4. 难度要适合${STATE.ageGroup?.label || '学生'}
+2. 写一个简短的任务说明，告诉学生该搜什么、关注哪些数据和事实
+3. 难度要适合${STATE.ageGroup?.label || '学生'}
 
 格式：
 [任务说明]
 一句话任务说明
 
 [搜索关键词]
-关键词1, 关键词2, 关键词3, 关键词4, 关键词5
-
-[参考链接]
-链接1描述：URL
-链接2描述：URL
-
-注意：链接要是真实的、可以访问的网站。`;
+关键词1, 关键词2, 关键词3, 关键词4, 关键词5`;
 
     const result = await callAI(prompt);
     STATE.researchData = parseResearch(result);
@@ -626,6 +699,7 @@ function parseResearch(text) {
 function renderResearchUI() {
   buildPhaseBar();
   const rd = STATE.researchData;
+  if (!rd) { renderPhase2(); return; }
   main.innerHTML = `
     <div class="msg msg-ai">
       <div class="avatar">🤖</div>
@@ -640,7 +714,6 @@ function renderResearchUI() {
       <p style="font-size:14px;margin-bottom:12px;">${rd.task}</p>
       <h3>🔑 搜索关键词</h3>
       <p>${rd.keywords.map(k => `<span class="kw">${k}</span>`).join(' ')}</p>
-      ${rd.links ? `<h3 style="margin-top:12px;">🌐 参考链接</h3><p>${rd.links.split('\n').map(l => `<span class="link">${l}</span>`).join('<br>')}</p>` : ''}
     </div>
     <textarea class="text-input" id="researchInput" style="min-height:200px;" placeholder="把你搜索到的数据、案例、你的想法粘贴在这里……&#10;&#10;要求：至少写 3 项观察和想法。&#10;&#10;例如：&#10;- 中国每年浪费粮食约3500万吨（数据）&#10;- 校园里每天大约有30%的食物被倒掉（观察）&#10;- 有调查显示70%的学生愿意参与环保行动（事实）&#10;- 我觉得可以做一个打卡工具，让同学们互相监督（想法）"></textarea>
     <div class="btn-group">
@@ -648,6 +721,7 @@ function renderResearchUI() {
       ${btn('✅ 粘贴好了，继续', 'btn-primary', 'confirmResearch()')}
     </div>
   `;
+  saveState();
 }
 
 function backToPhase1() {
@@ -755,7 +829,6 @@ function renderResearchEval(evalData) {
         ${btn('🔙 还想再补充点资料', 'btn-outline', 'backToResearchFromEval()')}
       `}
     </div>
-    <p style="text-align:center;font-size:11px;color:#ccc;margin-top:8px;">测试后门：点击顶部 🧠 大脑图标可跳过</p>
   `;
 }
 
@@ -828,6 +901,7 @@ function parseFeaturePhase(text) {
 function renderFeatureUI() {
   buildPhaseBar();
   const fd = STATE.featureData;
+  if (!fd) { renderPhase3(); return; }
   // Store for multi-select
   window._featData = fd.features;
   window._selFeat = new Set();
@@ -842,7 +916,7 @@ function renderFeatureUI() {
     </div>
     <h3 style="margin:16px 0 10px;">🔧 功能选择（可多选）</h3>
     <div class="check-list">${fd.features.map((f, i) => `
-      <div class="check-item" onclick="toggleFeat(${i}, this)">
+      <div class="check-item ${(window._selFeat || new Set()).has(i) ? 'selected' : ''}" onclick="toggleFeat(${i}, this)">
         <div class="check-box"></div>
         <div class="check-label"><span class="pri">[${f.priority}]</span> ${f.text}</div>
       </div>
@@ -851,8 +925,8 @@ function renderFeatureUI() {
     <div id="customFeatures"></div>
     <h3 style="margin:20px 0 10px;">🎯 你认为核心要解决的问题是？ ${btn('🔄 换一批', 'btn-outline btn-small', 'regenerateFeatures()', false)}</h3>
     <div class="choice-list">${fd.coreOpts.map(o => `
-      <div class="choice-card" onclick="selectCore('${o.key}','${o.text.replace(/'/g,"\\'")}', this)">
-        <div class="choice-dot"></div>
+      <div class="choice-card ${STATE.coreAnswer?.key === o.key ? 'selected' : ''}" onclick="selectCore('${o.key}','${o.text.replace(/'/g,"\\'")}', this)">
+        <div class="choice-dot">${STATE.coreAnswer?.key === o.key ? '✓' : ''}</div>
         <div class="choice-text"><strong>${o.key}.</strong> ${o.text}</div>
       </div>
     `).join('')}</div>
@@ -861,6 +935,7 @@ function renderFeatureUI() {
       ${btn('✅ 确认，生成 PRD', 'btn-primary', 'confirmFeatures()')}
     </div>
   `;
+  saveState();
 }
 
 function toggleFeat(i, el) {
@@ -1022,6 +1097,10 @@ ${STATE.allContext.features || '（无）'}
 
 function renderDesignEval() {
   buildPhaseBar();
+  if (!STATE.designScores) {
+    evaluateDesign();
+    return;
+  }
   const scores = STATE.designScores;
   const dimsHtml = DESIGN_DIMS.map(dim => {
     const s = scores[dim.id];
@@ -1067,6 +1146,7 @@ function renderDesignEval() {
       ${btn('← 返回修改功能', 'btn-outline', 'backToFeaturesFromEval()')}
     </div>
   `;
+  saveState();
 }
 
 function backToFeaturesFromEval() { STATE.phase = 3; renderFeatureUI(); }
@@ -1257,6 +1337,7 @@ function renderImprovResult(dim) {
       ${btn('🚀 直接生成 PRD', 'btn-outline', 'renderPhase4()')}
     </div>
   `;
+  saveState();
 }
 
 // ═══ Phase 4: Generate PRD ═══
@@ -1311,6 +1392,7 @@ ${STATE.designOverall ? `【设计评价】总评：${STATE.designOverall}` : ''
 
 function renderPRDResult() {
   buildPhaseBar();
+  if (!STATE.prdText) { renderPhase4(); return; }
   main.innerHTML = `
     <div class="msg msg-ai">
       <div class="avatar">📝</div>
@@ -1328,6 +1410,7 @@ function renderPRDResult() {
       ${btn('🚀 生成编程任务', 'btn-primary', 'renderPhase5()')}
     </div>
   `;
+  saveState();
 }
 
 function enablePrdEdit() {
@@ -1347,6 +1430,7 @@ function savePrdEdit() {
   if (!newText) { showToast('PRD 不能为空'); return; }
   STATE.prdText = newText;
   showToast('✅ PRD 已保存');
+  saveState();
   renderPRDResult();
 }
 
@@ -1376,37 +1460,54 @@ async function renderPhase5() {
 PRD 内容：
 ${STATE.prdText}
 
-【特别注意】PRD 中提到的每个功能都要对应至少一个编程步骤，不能遗漏。如果某个功能暂时做不出来，也要写一个「简化版」的实现步骤。
+【明确要求】
+1. 先从 PRD 中提取所有功能，每个功能必须对应一个编程步骤
+2. 然后增加 2 个通用步骤：步骤1 = HTML 页面骨架搭建，步骤2 = CSS 样式美化
+3. 所以总步骤数 = 功能数量 + 2
+4. 如果 PRD 中功能少于 3 个，也要生成最少 5 个步骤（把大功能拆细）
+5. 每个步骤包含：
+   - 步骤编号 + 标题（标题里要出现该功能或主题的名字）
+   - 要做什么：用简单的语言描述，适合${STATE.ageGroup?.label || '学生'}理解
+   - 提示词：一段可以直接复制给 AI 编程工具的提示词，约2-4句话
+   - 尝试修改：一个挑战问题，鼓励学生改一改代码
+6. 步骤顺序：先 HTML 骨架 → 再 CSS 美化 → 然后按使用顺序做每个功能的 JS 交互
+7. 技术栈：纯 HTML/CSS/JS，不涉及后端和数据库
+8. 提示词要短小精悍，学生复制过去 AI 就能写出可运行的代码
 
-要求：
-1. 步骤数量 = PRD 中的功能数量 + 2（基础框架 + 美化），最少 5 步，最多 10 步
-2. 每个功能单独一个步骤，标题里要出现这个功能的名字
-3. 每个步骤包含：
-   - 步骤编号 + 标题
-   - 要做什么（用简单的语言描述，适合${STATE.ageGroup?.label || '学生'}理解）
-   - 提示词（一段可以直接复制给 AI 编程工具的提示词，约2-4句话）
-   - 尝试修改（一个挑战问题，鼓励学生改一改代码）
-4. 步骤顺序：先搭骨架（HTML结构），再穿衣服（CSS样式），最后做每个功能的 JS 交互
-5. 技术栈：纯 HTML/CSS/JS，不涉及后端和后端数据库
-6. 提示词要短小精悍，学生复制过去 AI 就能写出可运行的代码
+【格式要求 - 必须严格遵守】
+每个步骤之间用单独一行的 --- 隔开。每个步骤必须包含「步骤N：」「要做什么：」「提示词：」「尝试修改：」四个字段。
 
-格式严格如下（每个步骤之间用 --- 隔开）：
-
-步骤1：标题
-要做什么：简单描述
-提示词：学生可直接复制给AI的提示词
-尝试修改：一个简单的修改建议
+步骤1：搭建HTML页面骨架
+要做什么：创建网页的基本结构，包括标题、输入框、按钮等占位元素
+提示词：请帮我用HTML创建一个简单的网页，包含一个标题、一段说明文字、一个输入框和一个按钮
+尝试修改：把标题改成你喜欢的名字
 
 ---
-步骤2：标题
-要做什么：简单描述
-提示词：学生可直接复制给AI的提示词
-尝试修改：一个简单的修改建议
+步骤2：添加CSS样式
+要做什么：给HTML元素添加颜色、间距、边框等样式，让页面好看
+提示词：请为上面的HTML添加CSS样式，让页面背景是浅紫色，按钮是圆角，文字居中显示
+尝试修改：把按钮颜色改成你喜欢的颜色
+
+---
+步骤3：实现XXX功能
+要做什么：...
+提示词：...
+尝试修改：...
 
 ---`;
 
     const result = await callAI(prompt, MODEL_PRO);
-    STATE.techSteps = parseSteps(result);
+    let steps = parseSteps(result);
+    // Validation: ensure minimum 5 steps
+    if (steps.length < 5) {
+      showToast(`⚠️ 只生成了 ${steps.length} 步，正在补充步骤……`);
+      // Retry once with stronger emphasis
+      const retryPrompt = prompt + '\n\n【重要提醒】你刚才只生成了 ' + steps.length + ' 步，请重新生成，确保至少有 5 个步骤，每个 PRD 功能都要有对应步骤。';
+      const retryResult = await callAI(retryPrompt, MODEL_PRO);
+      const retrySteps = parseSteps(retryResult);
+      if (retrySteps.length > steps.length) steps = retrySteps;
+    }
+    STATE.techSteps = steps;
     renderStepResult();
   } catch (e) {
     main.innerHTML = `<div class="msg msg-ai"><div class="avatar">😢</div><div class="bubble">生成失败：${e.message}<br>${btn('🔄 重试', 'btn-outline', 'renderPhase5()')}</div></div>`;
@@ -1420,9 +1521,9 @@ function parseSteps(text) {
     const p = part.trim();
     if (!p) continue;
     const titleM = p.match(/步骤\s*\d+\s*[：:]\s*(.+)/);
-    const whatM = p.match(/要做什么[：:]\s*([\s\S]*?)(?=提示词[：:]|$)/);
-    const promptM = p.match(/提示词[：:]\s*([\s\S]*?)(?=尝试修改[：:]|$)/);
-    const tryM = p.match(/尝试修改[：:]\s*([\s\S]*?)$/);
+    const whatM = p.match(/要做什么\s*[：:]\s*([\s\S]*?)(?=提示词\s*[：:]|$)/);
+    const promptM = p.match(/提示词\s*[：:]\s*([\s\S]*?)(?=尝试修改\s*[：:]|$)/);
+    const tryM = p.match(/尝试修改\s*[：:]\s*([\s\S]*?)$/);
     if (titleM) {
       steps.push({
         title: titleM[1].trim(),
@@ -1438,6 +1539,7 @@ function parseSteps(text) {
 function renderStepResult() {
   buildPhaseBar();
   const steps = STATE.techSteps;
+  if (!steps || steps.length === 0) { renderPhase5(); return; }
 
   main.innerHTML = `
     <div class="msg msg-ai">
@@ -1475,6 +1577,7 @@ function renderStepResult() {
     `).join('')}
   `;
   window._techSteps = steps;
+  saveState();
 }
 
 function copyStepPrompt(i, btn) {
@@ -1530,6 +1633,7 @@ function saveApiKey() {
 
 // ═══ Reset ═══
 function resetAll() {
+  clearSavedState();
   STATE.phase = 0; STATE.ageGroup = null; STATE.cats = []; STATE.userAnswers = []; STATE.researchNotes = '';
   STATE.selectedFeatures = []; STATE.prdText = ''; STATE.techSteps = []; STATE.allContext = {};
   STATE.questions = []; STATE.questionIdx = 0; STATE.coreAnswer = null;
@@ -1549,8 +1653,21 @@ function brainBackdoor() {
 // ═══ Start ═══
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('brainIcon').addEventListener('click', brainBackdoor);
+  if (loadState() && STATE.ageGroup) {
+    showToast('✅ 已恢复上次进度');
+    // Route to the saved phase
+    if (STATE.phase === 0) renderPhase0();
+    else if (STATE.phase === 1) renderQuestion();
+    else if (STATE.phase === 2) renderResearchUI();
+    else if (STATE.phase === 3) renderFeatureUI();
+    else if (STATE.phase === 4) renderDesignEval();
+    else if (STATE.phase === 5) renderPRDResult();
+    else if (STATE.phase === 6) renderStepResult();
+    else renderAgeSelect();
+  } else {
+    renderAgeSelect();
+  }
 });
-renderAgeSelect();
 </script>
 </body>
 </html>
