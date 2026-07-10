@@ -178,9 +178,18 @@ const CATS = [
   { id:'campus', icon:'🏫', name:'校园服务' }, { id:'club', icon:'🎨', name:'兴趣社团' },
 ];
 
+// ═══ Age groups ═══
+const AGE_GROUPS = [
+  { id:'p34', label:'小学 3-4 年级', age:'9-10岁', desc:'具体形象思维为主' },
+  { id:'p56', label:'小学 5-6 年级', age:'11-12岁', desc:'开始抽象思考，关注同伴' },
+  { id:'m12', label:'初中 1-2 年级', age:'13-14岁', desc:'能思考因果关系和社会影响' },
+  { id:'h', label:'高中及以上', age:'15岁+', desc:'具备较成熟的系统思维' },
+];
+
 // ═══ State ═══
 const STATE = {
   phase: 0, // 0=categories, 1=resolve, 2=questions, 3=research, 4=features, 5=prd, 6=tech
+  ageGroup: null,
   cats: [],
   userAnswers: [],  // answers to ai-generated questions
   researchNotes: '',
@@ -210,6 +219,35 @@ function btn(text, cls, onclick, disabled) {
   return `<button class="btn ${cls}" onclick="${onclick}" ${disabled?'disabled':''}>${text}</button>`;
 }
 
+// ═══ Pre-start: Age selection ═══
+function renderAgeSelect() {
+  buildPhaseBar();
+  main.innerHTML = `
+    <div class="msg msg-ai">
+      <div class="avatar">👋</div>
+      <div class="bubble">
+        <strong>开始前，先告诉小P你读几年级？</strong><br>
+        这样小P 才能出适合你年龄的思考题，不会太低幼也不会太复杂。
+      </div>
+    </div>
+    <div class="choice-list" style="margin-top:16px;">${AGE_GROUPS.map(g => `
+      <div class="choice-card" onclick="selectAgeGroup('${g.id}')">
+        <div class="choice-dot"></div>
+        <div class="choice-text">
+          <strong>${g.label}</strong>
+          <span style="color:var(--text-light);font-size:12px;display:block;">${g.age} · ${g.desc}</span>
+        </div>
+      </div>
+    `).join('')}</div>
+  `;
+}
+
+function selectAgeGroup(id) {
+  STATE.ageGroup = AGE_GROUPS.find(g => g.id === id);
+  STATE.allContext.ageGroup = STATE.ageGroup.label;
+  renderPhase0();
+}
+
 // ═══ Phase 0: Category Selection ═══
 function renderPhase0() {
   buildPhaseBar();
@@ -217,10 +255,14 @@ function renderPhase0() {
     <div class="msg msg-ai">
       <div class="avatar">🤖</div>
       <div class="bubble">
-        <strong>第一步：先想一想，你对什么感兴趣？</strong><br>
-        下面有12个方向，选 <strong>1~2 个</strong>你真正想探索的方向。
-        别急着让AI帮你选 —— 先问问自己：你真的关心这个话题吗？
+        <strong>第一步：你想做一个什么样的网站？</strong><br>
+        下面有 12 个方向，选 <strong>1~2 个</strong>你真正关心的方向。<br>
+        这个产品会是一个网页应用，帮人解决学校、社区或网络社群里的真实问题。
       </div>
+    </div>
+    <div style="text-align:center;margin-bottom:12px;">
+      <span style="display:inline-block;background:#f3e8ff;color:var(--purple);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">当前年级：${STATE.ageGroup?.label || '未选择'}</span>
+      <a href="javascript:void(0)" onclick="renderAgeSelect()" style="font-size:12px;color:var(--blue);margin-left:8px;">修改</a>
     </div>
     <div class="cat-count">已选 <strong id="catCount">0</strong> / 2</div>
     <div class="cat-grid" id="catGrid"></div>
@@ -276,14 +318,19 @@ async function renderPhase1Start() {
   main.innerHTML = `<div class="loading"><span class="spinner">⚙️</span><p>小P 正在根据你的方向「${STATE.allContext.cats}」出思考题……</p></div>`;
 
   try {
-    const prompt = `你是一个面向小学生的产品思辨引导老师。学生选了兴趣方向：${STATE.allContext.cats}。
+    const prompt = `你是一位面向${STATE.ageGroup?.label || '中小学生'}的产品思辨引导老师。学生最终要设计的是一个**网页应用**（不是硬件发明、不是实体产品）。
 
-请生成第 1 道引导式选择题，帮助学生缩小范围——在他们选的方向中，更具体地对什么感兴趣？
+学生选了兴趣方向：${STATE.allContext.cats}。
+
+请生成第 1 道引导式选择题，帮助学生缩小范围——在他们选的方向中，**更具体地想做一个什么类型的网站/网页应用**？
 
 要求：
 - 给 3 个选项（用A/B/C标记）
-- 选项要具体、有画面感，贴近小/初中生生活
+- 每个选项都必须是一个**网页应用能解决的问题或提供的服务**，例如：信息查询、打卡记录、方案设计、知识分享、互助匹配、数据展示、教程指南等
+- 场景可以发生在学校、居住社区或网络兴趣社群中
+- 选项要具体、有真实感，贴近${STATE.ageGroup?.label || '学生'}的生活
 - 每道题的选项是互斥的（只能选一个）
+- 避免出现「硬件」「机器人」「实物装置」「传感器」等不适合网页应用的描述
 
 格式严格如下：
 题1：题目标题
@@ -405,23 +452,29 @@ async function generateNextQuestion() {
   const previousAnswers = STATE.userAnswers.map((a, i) => `第${i+1}题：${STATE.questions[i].title}\n学生的答案：${a.text}`).join('\n\n');
 
   let topic = '';
-  if (idx === 2) topic = '目标用户——想帮助哪一类人？（具体到年龄段、身份等）';
-  else if (idx === 3) topic = '核心痛点——这个群体当前遇到什么具体问题？';
-  else if (idx === 4) topic = '使用场景——什么时间、地点、情况下需要这个产品？';
+  let topicDesc = '';
+  if (idx === 2) { topic = '目标用户'; topicDesc = '这个网站主要帮助哪一类人？（具体到年龄段、身份、所在社群）'; }
+  else if (idx === 3) { topic = '核心痛点'; topicDesc = '这个群体在相关场景下遇到什么具体问题？为什么需要网站来帮忙？'; }
+  else if (idx === 4) { topic = '使用场景'; topicDesc = '用户会在什么时间、什么地点、什么情况下打开这个网站？他们希望网站帮他们做什么？'; }
 
   try {
-    const prompt = `你是一个面向小学生的产品思辨引导老师。学生选了兴趣方向：${STATE.allContext.cats}。
+    const prompt = `你是一位面向${STATE.ageGroup?.label || '中小学生'}的产品思辨引导老师。学生最终要设计的是一个**网页应用**（不是硬件发明、不是实体产品）。
+
+学生选了兴趣方向：${STATE.allContext.cats}。
 
 学生已经回答了前 ${STATE.questionIdx} 道题：
 ${previousAnswers}
 
-请根据上面的回答，生成第 ${idx} 道引导式选择题：${topic}
+请根据上面的回答，生成第 ${idx} 道引导式选择题：${topic}——${topicDesc}
 
 要求：
 - 题目必须与学生的之前选择相关联，不能凭空出现
 - 给 3 个选项（用A/B/C标记）
-- 选项要具体、有画面感，贴近小/初中生生活
+- 每个选项都必须是**网页应用能够支持的真实使用场景**，例如：打开网页查信息、在网页上记录/打卡、在网页上设计/计算、在网页上分享/求助、在网页上查看数据等
+- 场景可以发生在学校、居住社区或网络兴趣社群中
+- 选项要具体、有真实感，贴近${STATE.ageGroup?.label || '学生'}的生活
 - 每道题的选项是互斥的（只能选一个）
+- 避免出现「硬件」「机器人」「实物装置」「传感器」等不适合网页应用的描述
 
 格式严格如下：
 题${idx}：题目标题
@@ -466,12 +519,18 @@ async function regenerateOptions() {
   const previousAnswers = STATE.userAnswers.slice(0, STATE.questionIdx).map((a, i) => `第${i+1}题：${STATE.questions[i].title}\n学生的答案：${a.text}`).join('\n\n');
 
   try {
-    const prompt = `学生选了方向：${STATE.allContext.cats}。
+    const prompt = `学生最终要设计的是一个网页应用（不是硬件发明）。学生读${STATE.ageGroup?.label || '中小学'}，选了方向：${STATE.allContext.cats}。
 ${previousAnswers ? `学生之前回答了：\n${previousAnswers}\n` : ''}
 现在学生在思考第 ${idx} 题："${q.title}"，但之前的 3 个选项不够好。
 
 请为这道题重新生成 **3 个完全不同的选项**（用A/B/C标记）。
-选项要具体、有趣、贴近学生生活，不要和常见答案重复，且要与之前回答保持一致。
+要求：
+- 每个选项都必须是网页应用能支持的真实使用场景
+- 场景可以发生在学校、居住社区或网络兴趣社群中
+- 选项要具体、有真实感，贴近${STATE.ageGroup?.label || '学生'}生活
+- 不要和常见答案重复，且要与之前回答保持一致
+- 避免出现「硬件」「机器人」「实物装置」「传感器」等不适合网页应用的描述
+
 格式严格：
 A：选项描述
 B：选项描述
@@ -523,13 +582,14 @@ async function renderPhase2() {
   main.innerHTML = `<div class="loading"><span class="spinner">🔍</span><p>小P 正在整理资料搜索任务……</p></div>`;
 
   try {
-    const prompt = `学生选了方向：${STATE.allContext.cats}，并回答了以下问题：
+    const prompt = `学生读${STATE.ageGroup?.label || '中小学'}，选了方向：${STATE.allContext.cats}，并回答了以下问题：
 ${STATE.allContext.answers}
 
 请为学生设计一个「资料搜索任务」。要求：
 1. 给 5 个搜索关键词（让学生去百度或浏览器里搜）
 2. 给 2-3 个参考网站链接（真实的、适合学生查阅资料的网站）
 3. 写一个简短的任务说明，告诉学生该搜什么、关注哪些数据和事实
+4. 难度要适合${STATE.ageGroup?.label || '学生'}
 
 格式：
 [任务说明]
@@ -628,6 +688,7 @@ async function checkResearchQuality() {
   try {
     const prompt = `请评价学生提交的调研资料质量。10分制。
 
+学生年级：${STATE.ageGroup?.label || '中小学'}
 学生方向：${STATE.allContext.cats}
 学生调研资料：
 ${STATE.researchNotes}
@@ -636,6 +697,8 @@ ${STATE.researchNotes}
 - 资料充实度（0-4分）：是否有具体数据、案例、事实？
 - 与方向相关性（0-3分）：资料是否紧扣选题方向？
 - 思考深度（0-3分）：是否有自己的观察和分析？
+
+请按${STATE.ageGroup?.label || '学生'}水平评价，不要以大学生或专业研究者标准要求。
 
 请输出（不要用markdown代码块，直接输出纯文本）：
 
@@ -703,17 +766,17 @@ async function renderPhase3() {
   main.innerHTML = `<div class="loading"><span class="spinner">⚙️</span><p>小P 根据你的调研结果生成功能选项……</p></div>`;
 
   try {
-    const prompt = `学生选了方向「${STATE.allContext.cats}」，经过思考后回答了以下问题：
+    const prompt = `学生读${STATE.ageGroup?.label || '中小学'}，选了方向「${STATE.allContext.cats}」，经过思考后回答了以下问题：
 ${STATE.allContext.answers}
 
 学生搜索到的资料/数据/痛点：
 ${STATE.researchNotes || '（学生未粘贴搜索资料）'}
 
-请根据以上所有信息，为学生设计功能相关的选择题。这个产品应该是网页应用，适合小/初中生使用。
+请根据以上所有信息，为学生设计功能相关的选择题。这个产品必须是网页应用，适合${STATE.ageGroup?.label || '学生'}使用。
 
 请生成以下题目：
 
-1. 【功能选择题】给出 6-8 个功能建议（标注 P0/P1/P2 优先级），让学生勾选想要的功能。P0 必须有（最多3个），P1 应该有，P2 可选。用 checkbox（可多选）格式。
+1. 【功能选择题】给出 6-8 个功能建议（标注 P0/P1/P2 优先级），让学生勾选想要的功能。P0 必须有（最多3个），P1 应该有，P2 可选。所有功能必须是网页能实现的（如页面展示、表单填写、数据记录、计算、排行榜、分享等），不要硬件相关功能。
 
 2. 【核心问题确认题】根据资料和思考，你认为学生最想解决的核心问题是什么？给 3 个选项，让学生选一个。
 
@@ -817,15 +880,15 @@ function addCustomFeature() {
 async function regenerateFeatures() {
   main.innerHTML = `<div class="loading"><span class="spinner">🔄</span><p>小P 正在重新思考功能组合……</p></div>`;
   try {
-    const prompt = `学生选了方向「${STATE.allContext.cats}」，经过思考后回答了以下问题：
+    const prompt = `学生读${STATE.ageGroup?.label || '中小学'}，选了方向「${STATE.allContext.cats}」，经过思考后回答了以下问题：
 ${STATE.allContext.answers}
 
 学生搜索到的资料/数据/痛点：
 ${STATE.researchNotes || '（学生未粘贴搜索资料）'}
 
-请重新为学生设计功能相关的选择题。要求与上次不同，从新的角度思考。
+请重新为学生设计功能相关的选择题。要求与上次不同，从新的角度思考。产品必须是网页应用。
 
-1. 【功能选择题】给出 6-8 个功能建议（标注 P0/P1/P2 优先级），让学生勾选。P0 最多3个。
+1. 【功能选择题】给出 6-8 个功能建议（标注 P0/P1/P2 优先级），让学生勾选。P0 最多3个。所有功能必须是网页能实现的。
 2. 【核心问题确认题】你认为这个产品最核心要解决的问题是什么？给 3 个选项。
 
 格式严格如下：
@@ -901,6 +964,7 @@ async function evaluateDesign() {
   try {
     const prompt = `请用 DESIGN 六维法评价学生的产品想法。每个维度1-5星，附简短评语（15字以内）。
 
+学生年级：${STATE.ageGroup?.label || '中小学'}
 学生方向：${STATE.allContext.cats}
 学生思考回答：
 ${STATE.allContext.answers}
@@ -917,6 +981,8 @@ ${STATE.allContext.features || '（无）'}
 4. 创新性 Innovation：有新意吗？
 5. 引导性 Guidance：操作流程清晰吗？
 6. 低门槛 Nostalgia-free：不需要旧习惯就能上手吗？
+
+请按${STATE.ageGroup?.label || '学生'}水平评价，不要以专业产品经理标准要求。
 
 输出格式（必须严格，不要用markdown代码块）：
 需求度：4星
@@ -1011,16 +1077,17 @@ async function improveDimension(dimId) {
   main.innerHTML = `<div class="loading"><span class="spinner">🧠</span><p>小P 正在为「${dim.name}」出深度思考题……</p></div>`;
 
   try {
-    const prompt = `学生正在设计一个产品，方向是「${STATE.allContext.cats}」，核心问题是「${STATE.allContext.coreAnswer}」，选定功能：${STATE.allContext.features}。
+    const prompt = `学生读${STATE.ageGroup?.label || '中小学'}，正在设计一个网页应用，方向是「${STATE.allContext.cats}」，核心问题是「${STATE.allContext.coreAnswer}」，选定功能：${STATE.allContext.features}。
 
 现在学生想在「${dim.name}」这个维度上做得更好。
 
 请针对这个维度，设计 2-3 道引导式选择题（每道3个选项），帮助学生深度思考如何提升这个维度。
 
 要求：
-- 题目要有启发性，引导学生从不同角度重新审视自己的设计
-- 选项要具体、有对比性
+- 题目要有启发性，引导学生从不同角度重新审视自己的网页应用设计
+- 选项要具体、有对比性，且必须是网页应用可以实现的方向
 - 不要直接给答案，而是通过选项让学生自己想到改进方向
+- 难度适合${STATE.ageGroup?.label || '学生'}
 
 格式：
 题1：xxx
@@ -1198,8 +1265,9 @@ async function renderPhase4() {
   main.innerHTML = `<div class="loading"><span class="spinner">📝</span><p>小P 正在根据你的所有思考生成 PRD 文档……</p></div>`;
 
   try {
-    const prompt = `请根据以下信息，生成一份**小学生能看懂的简短 PRD**。
+    const prompt = `请根据以下信息，生成一份适合${STATE.ageGroup?.label || '中小学生'}看的简短 PRD。
 
+【年级】${STATE.ageGroup?.label || '中小学'}
 【方向】${STATE.allContext.cats}
 【思考与回答】${STATE.allContext.answers}
 【调研资料】${STATE.allContext.research || '（无）'}
@@ -1207,10 +1275,10 @@ async function renderPhase4() {
 【选定功能】${STATE.allContext.features || '（无）'}
 ${STATE.designOverall ? `【设计评价】总评：${STATE.designOverall}` : ''}
 
-这是一款面向小/初中生的网页应用。请严格按照下面格式输出，**不要写表格，不要写长段落，每个部分只写简短的 bullet points**：
+这是一款面向${STATE.ageGroup?.label || '学生'}的网页应用。请严格按照下面格式输出，**不要写表格，不要写长段落，每个部分只写简短的 bullet points**：
 
 ## 一、这个产品是什么？
-- 一句话说清：这个产品帮谁解决什么问题
+- 一句话说清：这个网站帮谁解决什么问题
 - 它像什么：用一个生活中的东西做比喻
 
 ## 二、谁会用它？
@@ -1230,7 +1298,7 @@ ${STATE.designOverall ? `【设计评价】总评：${STATE.designOverall}` : ''
 要求：
 - 每个 bullet 不超过 25 个字
 - 总字数控制在 400 字以内
-- 用词简单，像给小学生讲故事
+- 用词简单，像给${STATE.ageGroup?.label || '学生'}讲故事
 - 不要专业术语、不要表格、不要流程图`; 
 
     const result = await callAI(prompt, MODEL_PRO);
@@ -1301,7 +1369,7 @@ async function renderPhase5() {
   main.innerHTML = `<div class="loading"><span class="spinner">🔨</span><p>小P 正在把 PRD 拆成一步步的编程任务……</p></div>`;
 
   try {
-    const prompt = `你是一位编程老师，正在教小/初中生把产品需求变成代码。
+    const prompt = `你是一位编程老师，正在教${STATE.ageGroup?.label || '小/初中生'}把产品需求变成代码。
 
 请根据以下 PRD，生成一份「分步编程任务清单」。
 
@@ -1315,7 +1383,7 @@ ${STATE.prdText}
 2. 每个功能单独一个步骤，标题里要出现这个功能的名字
 3. 每个步骤包含：
    - 步骤编号 + 标题
-   - 要做什么（用简单的语言描述）
+   - 要做什么（用简单的语言描述，适合${STATE.ageGroup?.label || '学生'}理解）
    - 提示词（一段可以直接复制给 AI 编程工具的提示词，约2-4句话）
    - 尝试修改（一个挑战问题，鼓励学生改一改代码）
 4. 步骤顺序：先搭骨架（HTML结构），再穿衣服（CSS样式），最后做每个功能的 JS 交互
@@ -1462,12 +1530,12 @@ function saveApiKey() {
 
 // ═══ Reset ═══
 function resetAll() {
-  STATE.phase = 0; STATE.cats = []; STATE.userAnswers = []; STATE.researchNotes = '';
+  STATE.phase = 0; STATE.ageGroup = null; STATE.cats = []; STATE.userAnswers = []; STATE.researchNotes = '';
   STATE.selectedFeatures = []; STATE.prdText = ''; STATE.techSteps = []; STATE.allContext = {};
   STATE.questions = []; STATE.questionIdx = 0; STATE.coreAnswer = null;
   STATE.designScores = null; STATE.designOverall = null; STATE._improvedDims = new Set();
   window._featData = []; window._selFeat = new Set(); window._techSteps = [];
-  renderPhase0();
+  renderAgeSelect();
 }
 
 // ═══ Test backdoor: click brain icon to skip current check ═══
@@ -1482,7 +1550,7 @@ function brainBackdoor() {
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('brainIcon').addEventListener('click', brainBackdoor);
 });
-renderPhase0();
+renderAgeSelect();
 </script>
 </body>
 </html>
