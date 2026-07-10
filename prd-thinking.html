@@ -187,6 +187,7 @@ function saveState() {
     techSteps: STATE.techSteps,
     designScores: STATE.designScores,
     designOverall: STATE.designOverall,
+    reviewSummary: STATE.reviewSummary,
     improvedDims: Array.from(STATE._improvedDims || []),
     improvQuestions: STATE._improvQuestions,
     improvDim: STATE._improvDim,
@@ -221,6 +222,7 @@ function loadState() {
     STATE.techSteps = data.techSteps || [];
     STATE.designScores = data.designScores || null;
     STATE.designOverall = data.designOverall || null;
+    STATE.reviewSummary = data.reviewSummary || null;
     STATE._improvedDims = new Set(data.improvedDims || []);
     STATE._improvQuestions = data.improvQuestions || [];
     STATE._improvDim = data.improvDim || null;
@@ -1051,6 +1053,13 @@ async function evaluateDesign() {
   try {
     const prompt = `请用 DESIGN 六维法评价学生的产品想法。每个维度1-5星，附简短评语（15字以内）。
 
+【评分要求 - 必须严格打分！】
+学生是初次设计，想法往往不够成熟。请从苛刻的角度评价：
+- 大部分学生的初稿应该得分在 2-3 星
+- 只有特别出色、思考很具体的才能给 4 星
+- 除非完美无瑕，否则不给 5 星
+- 这样可以激励学生在看到评分后，通过深度思考来提升得分
+
 学生年级：${STATE.ageGroup?.label || '中小学'}
 学生方向：${STATE.allContext.cats}
 学生思考回答：
@@ -1069,20 +1078,20 @@ ${STATE.allContext.features || '（无）'}
 5. 引导性 Guidance：操作流程清晰吗？
 6. 低门槛 Nostalgia-free：不需要旧习惯就能上手吗？
 
-请按${STATE.ageGroup?.label || '学生'}水平评价，不要以专业产品经理标准要求。
+请按${STATE.ageGroup?.label || '学生'}水平严格评价。
 
 输出格式（必须严格，不要用markdown代码块）：
-需求度：4星
+需求度：X星
 评语：xxx
-有效性：3星
+有效性：X星
 评语：xxx
-简洁性：4星
+简洁性：X星
 评语：xxx
-创新性：3星
+创新性：X星
 评语：xxx
-引导性：4星
+引导性：X星
 评语：xxx
-低门槛：5星
+低门槛：X星
 评语：xxx
 总评：xxx`;
 
@@ -1154,7 +1163,7 @@ function renderDesignEval() {
     </div>
     ${dimsHtml}
     <div class="btn-group">
-      ${btn('🚀 直接生成 PRD', 'btn-primary', 'renderPhase4()')}
+      ${btn('🚀 生成 PRD', 'btn-primary', 'renderReviewPhase()')}
       ${btn('← 返回修改功能', 'btn-outline', 'backToFeaturesFromEval()')}
     </div>
   `;
@@ -1346,7 +1355,105 @@ function renderImprovResult(dim) {
     </div>
     <div class="btn-group">
       ${btn('📊 回到评价总览', 'btn-primary', 'renderDesignEval()')}
-      ${btn('🚀 直接生成 PRD', 'btn-outline', 'renderPhase4()')}
+      ${btn('🚀 生成 PRD', 'btn-outline', 'renderReviewPhase()')}
+    </div>
+  `;
+  saveState();
+}
+
+// ═══ Review Phase: AI Summary before PRD ═══
+async function renderReviewPhase() {
+  buildPhaseBar();
+  main.innerHTML = `<div class="loading"><span class="spinner">📋</span><p>小P 正在回顾你的思考过程……</p></div>`;
+
+  // Collect improvement loop data
+  let improvText = '（学生未做深度改进）';
+  if (STATE._improvAnswers && STATE._improvAnswers.length > 0) {
+    const dim = DESIGN_DIMS.find(d => d.id === STATE._improvDim);
+    improvText = STATE._improvAnswers.map((a, i) => {
+      const qTitle = STATE._improvQuestions && STATE._improvQuestions[i] ? STATE._improvQuestions[i].title : '未知';
+      return `关于「${dim?.name || STATE._improvDim}」维度的思考：${qTitle}\n学生的答案：${a.text}`;
+    }).join('\n\n');
+  }
+
+  try {
+    const prompt = `请根据以下信息，生成一份回顾总结，帮助学生在生成 PRD 前回顾自己的思考过程。
+
+学生年级：${STATE.ageGroup?.label || '中小学'}
+产品方向：${STATE.allContext.cats}
+核心问题：${STATE.allContext.coreAnswer || '（未确定）'}
+
+【阶段一：思辨问答回顾】
+以下是学生在4道思辨题中的回答：
+${STATE.allContext.answers || '（无）'}
+
+【阶段二：竞品与调研回顾】
+以下是学生通过搜索找到的资料和观察：
+${STATE.allContext.research || '（无）'}
+
+【阶段三：评分后深度改进回顾】
+以下是在多维评价后，学生针对某些维度做的重新思考：
+${improvText}
+
+请将以上三个阶段的回顾整理成自然流畅的总结，格式如下：
+
+[思辨回顾]
+用2-3句话总结：学生最初想做什么产品、为谁做、解决什么问题。引用学生原话。
+
+[调研发现]
+用2-3句话总结：学生搜到了什么竞品或真实案例，发现了什么关键信息。
+
+[改进思考]
+用2-3句话总结：学生评分后针对哪些维度做了反思，想出了什么改进方向。如果没有做改进就说「暂未做深度改进，可以回头再看看」。
+
+注意：
+- 要具体引用学生说过的内容，不要写空泛的套话
+- 用${STATE.ageGroup?.label || '学生'}能理解的语言
+- 不要 Markdown 加粗`;
+
+    const result = await callAI(prompt);
+    STATE.reviewSummary = result;
+    renderReviews();
+  } catch (e) {
+    showToast('⚠️ 回顾生成失败，直接进入 PRD');
+    renderPhase4();
+  }
+}
+
+function renderReviews() {
+  const text = STATE.reviewSummary || '';
+  const getSection = (label) => {
+    const m = text.match(new RegExp(`\\[${label}\\]\\s*([\\s\\S]*?)(?=\\[|$)`, 'i'));
+    return m ? m[1].trim() : '待补充';
+  };
+
+  main.innerHTML = `
+    <div class="msg msg-ai">
+      <div class="avatar">📋</div>
+      <div class="bubble">
+        <strong>回顾总结</strong><br>
+        小P 帮你整理了这一路的思考成果。看看下面的总结，有没有遗漏的？
+      </div>
+    </div>
+
+    <div class="result-block" style="border-left:4px solid var(--pink);margin-bottom:12px;">
+      <h2 style="color:var(--pink);">💭 思辨回顾</h2>
+      <div class="body" style="font-size:14px;">${getSection('思辨回顾')}</div>
+    </div>
+
+    <div class="result-block" style="border-left:4px solid var(--teal);margin-bottom:12px;">
+      <h2 style="color:var(--teal);">🔍 调研发现</h2>
+      <div class="body" style="font-size:14px;">${getSection('调研发现')}</div>
+    </div>
+
+    <div class="result-block" style="border-left:4px solid var(--orange);margin-bottom:12px;">
+      <h2 style="color:var(--orange);">💡 改进思考</h2>
+      <div class="body" style="font-size:14px;">${getSection('改进思考')}</div>
+    </div>
+
+    <div class="btn-group">
+      ${btn('← 返回评分', 'btn-outline', 'renderDesignEval()')}
+      ${btn('✅ 确认回顾，生成 PRD', 'btn-primary', 'renderPhase4()')}
     </div>
   `;
   saveState();
@@ -1368,7 +1475,7 @@ async function renderPhase4() {
 【选定功能】${STATE.allContext.features || '（无）'}
 ${STATE.designOverall ? `【设计评价】总评：${STATE.designOverall}` : ''}
 
-这是一款面向${STATE.ageGroup?.label || '学生'}的网页应用。请严格按照下面格式输出，**不要写表格，不要写长段落，每个部分只写简短的 bullet points**：
+这是一款面向${STATE.ageGroup?.label || '学生'}的网页应用。请按照下面格式输出 PRD：
 
 ## 一、这个产品是什么？
 - 一句话说清：这个网站帮谁解决什么问题
@@ -1378,21 +1485,20 @@ ${STATE.designOverall ? `【设计评价】总评：${STATE.designOverall}` : ''
 - 主要用户：年龄、身份、特点
 - 用户在什么情况下会打开这个网页？
 
-## 三、最重要的 3 个功能
-- 功能 1（P0）：一句话说明
-- 功能 2（P0）：一句话说明
-- 功能 3（P1）：一句话说明
+## 三、功能
+- 列出学生选定的所有功能，按 P0/P1/P2 排列
+- 每个功能一句话说清
 
 ## 四、用户怎么用？
-- 第 1 步：打开网页看到什么
-- 第 2 步：用户点什么
-- 第 3 步：得到什么结果
+- 从打开网页到完成操作的完整流程
+- 3-5 个步骤
 
 要求：
-- 每个 bullet 不超过 25 个字
-- 总字数控制在 400 字以内
-- 用词简单，像给${STATE.ageGroup?.label || '学生'}讲故事
-- 不要专业术语、不要表格、不要流程图`; 
+- **必须体现学生自己的回答、调研发现和改进思考**，不能写学生没思考过的内容
+- **每个学生提到的功能都要写**，不限于「最重要的 3 个」
+- 字数根据功能数量弹性变化：如果只有 3 个功能就 400-800 字；如果功能多就 800-2000 字
+- 用词适合${STATE.ageGroup?.label || '学生'}，但内容要有实质信息
+- 不要表格、不要流程图、不要 Markdown 加粗`; 
 
     const result = await callAI(prompt, MODEL_PRO);
     STATE.prdText = result;
@@ -1672,7 +1778,10 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (STATE.phase === 1) renderQuestion();
     else if (STATE.phase === 2) renderResearchUI();
     else if (STATE.phase === 3) renderFeatureUI();
-    else if (STATE.phase === 4) renderDesignEval();
+    else if (STATE.phase === 4) {
+      if (STATE.reviewSummary) renderReviews();
+      else renderDesignEval();
+    }
     else if (STATE.phase === 5) renderPRDResult();
     else if (STATE.phase === 6) renderStepResult();
     else renderAgeSelect();
