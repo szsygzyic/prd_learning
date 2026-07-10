@@ -662,22 +662,34 @@ async function renderPhase2() {
   main.innerHTML = `<div class="loading"><span class="spinner">🔍</span><p>小P 正在整理资料搜索任务……</p></div>`;
 
   try {
-    const prompt = `学生读${STATE.ageGroup?.label || '中小学'}，选了方向：${STATE.allContext.cats}，并回答了以下问题：
+    const prompt = `学生读${STATE.ageGroup?.label || '中小学'}，正在设计一个网页应用。学生选了方向：${STATE.allContext.cats}，并回答了以下问题：
 ${STATE.allContext.answers}
 
-请为学生设计一个「资料搜索任务」。要求：
-1. 给 5 个搜索关键词（让学生去百度或浏览器里搜）
-2. 写一个简短的任务说明，告诉学生该搜什么、关注哪些数据和事实
-3. 难度要适合${STATE.ageGroup?.label || '学生'}
+请为学生设计一个「竞品与真实流程调研任务」。
+
+要求：
+1. 任务说明要引导学生去调研「真实世界里这个问题是怎么解决的」，而不是「如何做一个网页」
+2. 重点关注：
+   - 有哪些现成的网站、App、工具在做类似的事？
+   - 真实场景中人们（或相关行业）现在是怎么完成这个流程的？
+   - 可以搜索相关的视频、图片、案例、剧本/流程/规则，看看别人怎么做
+3. 给 5 个搜索关键词，关键词要偏「半开放式」，学生可以组合使用
+4. 不要出现技术实现类的关键词（如 HTML、代码、拖拽组件、数据库等）
+5. 难度要适合${STATE.ageGroup?.label || '学生'}
 
 格式：
 [任务说明]
 一句话任务说明
 
 [搜索关键词]
-关键词1, 关键词2, 关键词3, 关键词4, 关键词5`;
+关键词1, 关键词2, 关键词3, 关键词4, 关键词5
 
-    const result = await callAI(prompt);
+示例（如果学生做戏剧类网页）：
+[任务说明]
+请搜索舞台上「走位/站位」是怎么排练的，有哪些现成的工具或网站可以规划站位；也可以找导演给演员讲戏、剧本排练的视频，看看真实流程是什么样的。
+
+[搜索关键词]
+舞台走位图, 导演排戏流程, 剧本排练视频, 在线站位规划工具, 舞台调度案例`;
     STATE.researchData = parseResearch(result);
     renderResearchUI();
   } catch (e) {
@@ -704,18 +716,18 @@ function renderResearchUI() {
     <div class="msg msg-ai">
       <div class="avatar">🤖</div>
       <div class="bubble">
-        <strong>第二步：自己去搜一搜</strong><br>
-        一个好的产品经理不会凭空想象，他会花时间去了解真实情况。<br>
-        请你用下面的关键词去百度搜索，把找到的<strong>数据、案例、痛点</strong>粘贴到下方。
+        <strong>第二步：去看看别人是怎么做的</strong><br>
+        一个好的产品经理不会凭空想象，他会先去了解真实世界。<br>
+        请用下面的关键词搜索：<strong>类似网站、真实流程、案例视频、别人怎么解决</strong>。
       </div>
     </div>
     <div class="research-block">
       <h3>📌 搜索任务</h3>
       <p style="font-size:14px;margin-bottom:12px;">${rd.task}</p>
-      <h3>🔑 搜索关键词</h3>
+      <h3>🔑 搜索关键词（可组合使用）</h3>
       <p>${rd.keywords.map(k => `<span class="kw">${k}</span>`).join(' ')}</p>
     </div>
-    <textarea class="text-input" id="researchInput" style="min-height:200px;" placeholder="把你搜索到的数据、案例、你的想法粘贴在这里……&#10;&#10;要求：至少写 3 项观察和想法。&#10;&#10;例如：&#10;- 中国每年浪费粮食约3500万吨（数据）&#10;- 校园里每天大约有30%的食物被倒掉（观察）&#10;- 有调查显示70%的学生愿意参与环保行动（事实）&#10;- 我觉得可以做一个打卡工具，让同学们互相监督（想法）"></textarea>
+    <textarea class="text-input" id="researchInput" style="min-height:200px;" placeholder="把你搜索到的竞品、真实流程、案例、你的想法粘贴在这里……&#10;&#10;要求：至少写 3 项观察和想法。&#10;&#10;例如：&#10;- 我发现导演排戏时会在地上贴标记点（流程）&#10;- 有专门的网站 Miro/Canva 可以拖拽排版（竞品）&#10;- 排练时演员会问"我站在哪里"（痛点）&#10;- 我觉得可以做一个能拖拽小人的网页（想法）"></textarea>
     <div class="btn-group">
       ${btn('← 返回上一步', 'btn-outline', 'backToPhase1()')}
       ${btn('✅ 粘贴好了，继续', 'btn-primary', 'confirmResearch()')}
@@ -768,9 +780,9 @@ async function checkResearchQuality() {
 ${STATE.researchNotes}
 
 评判标准：
-- 资料充实度（0-4分）：是否有具体数据、案例、事实？
+- 竞品/案例充实度（0-4分）：是否搜到了类似网站、工具、视频或真实案例？
 - 与方向相关性（0-3分）：资料是否紧扣选题方向？
-- 思考深度（0-3分）：是否有自己的观察和分析？
+- 思考深度（0-3分）：是否有自己的观察、对比或分析？
 
 请按${STATE.ageGroup?.label || '学生'}水平评价，不要以大学生或专业研究者标准要求。
 
