@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>硬件头脑风暴 · 暖场活动方案</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --navy: #1a2a40; --navy-light: #243550;
+  --orange: #e67e22; --orange-light: #f5af4f;
+  --green: #2ecc71; --bg: #eef2f7; --card: #ffffff;
+  --text: #2c3e50; --text-light: #7f8c8d;
+  --shadow: 0 4px 20px rgba(26,42,64,0.10);
+  --radius: 16px;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg); color: var(--text); line-height: 1.7;
+  padding: 40px 20px;
+}
+.container { max-width: 900px; margin: 0 auto; }
+
+.header {
+  text-align: center; padding: 40px 20px;
+  background: linear-gradient(135deg, var(--navy), var(--navy-light));
+  border-radius: 20px; color: #fff; margin-bottom: 32px;
+}
+.header .icon { font-size: 48px; display: block; margin-bottom: 10px; }
+.header h1 { font-size: 28px; font-weight: 800; margin-bottom: 6px; }
+.header .sub { font-size: 14px; opacity: 0.85; }
+.header .meta {
+  display: flex; gap: 24px; justify-content: center; flex-wrap: wrap;
+  margin-top: 16px; font-size: 13px;
+}
+.header .meta span {
+  background: rgba(255,255,255,0.15); padding: 4px 14px;
+  border-radius: 20px;
+}
+
+.card {
+  background: var(--card); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 28px 32px; margin-bottom: 24px;
+  border-top: 3px solid var(--orange);
+}
+.card.alt { border-top-color: var(--navy); }
+.card.green { border-top-color: var(--green); }
+
+.card h2 {
+  font-size: 20px; font-weight: 700; margin-bottom: 6px;
+  display: flex; align-items: center; gap: 10px;
+}
+.card h2 .step-num {
+  background: var(--orange); color: #fff; width: 32px; height: 32px;
+  border-radius: 50%; display: inline-flex; align-items: center;
+  justify-content: center; font-size: 16px; flex-shrink: 0;
+}
+.card.alt h2 .step-num { background: var(--navy); }
+.card.green h2 .step-num { background: var(--green); }
+
+.card .desc { color: var(--text-light); font-size: 14px; margin-bottom: 16px; }
+
+.info-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px; margin: 16px 0;
+}
+.info-item {
+  background: #fafbfc; border-radius: 12px; padding: 14px;
+  border: 1px solid #e8ecf0;
+}
+.info-item .label { font-size: 11px; color: var(--text-light); font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+.info-item .value { font-size: 14px; font-weight: 600; color: var(--text); }
+
+table {
+  width: 100%; border-collapse: collapse; font-size: 14px; margin: 16px 0;
+}
+table th {
+  background: var(--navy); color: #fff; padding: 10px 14px;
+  text-align: left; font-size: 13px; font-weight: 600;
+}
+table td {
+  padding: 10px 14px; border-bottom: 1px solid #e8ecf0;
+}
+table tr:nth-child(even) td { background: #fafbfc; }
+
+.script-block {
+  background: #fafbfc; border-left: 4px solid var(--orange);
+  border-radius: 0 12px 12px 0; padding: 16px 20px;
+  margin: 12px 0; font-size: 14px;
+}
+.script-block .speaker { font-weight: 700; color: var(--orange); margin-bottom: 4px; }
+.script-block .line { line-height: 1.8; }
+
+.tip {
+  background: #fff8f0; border: 1px solid #f5af4f;
+  border-radius: 12px; padding: 14px 18px; margin: 12px 0;
+  font-size: 13px; color: var(--navy);
+}
+.tip strong { color: var(--orange); }
+
+.option-row {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 16px; margin: 16px 0;
+}
+.option-card {
+  background: #fafbfc; border: 2px solid #e8ecf0;
+  border-radius: 14px; padding: 18px;
+}
+.option-card h3 { font-size: 16px; margin-bottom: 8px; color: var(--navy); }
+.option-card p { font-size: 13px; color: var(--text-light); }
+.option-card .tag {
+  display: inline-block; background: var(--navy); color: #fff;
+  padding: 2px 10px; border-radius: 12px; font-size: 11px;
+  font-weight: 600; margin-bottom: 8px;
+}
+
+.flow-chart {
+  display: flex; align-items: center; justify-content: center;
+  gap: 12px; flex-wrap: wrap; margin: 20px 0;
+}
+.flow-step {
+  background: var(--card); border: 2px solid #e8ecf0;
+  border-radius: 14px; padding: 12px 18px; text-align: center;
+  font-size: 13px; font-weight: 600; min-width: 100px;
+}
+.flow-arrow { font-size: 20px; color: var(--orange); font-weight: 700; }
+
+@media (max-width: 640px) {
+  .container { padding: 10px; }
+  .card { padding: 20px 18px; }
+  .option-row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- Header -->
+<div class="header">
+  <span class="icon">🧠</span>
+  <h1>硬件头脑风暴 · 暖场活动方案</h1>
+  <p class="sub">设计思维启蒙课 | 小学三年级 ~ 初中二年级 | 14 人</p>
+  <div class="meta">
+    <span>⏱ 总时长：10 分钟</span>
+    <span>🏫 场地：创客空间/活动室</span>
+    <span>👥 灵活分组</span>
+    <span>🛠 配合 hw-design-thinking.html 使用</span>
+  </div>
+</div>
+
+<!-- Overview -->
+<div class="card">
+  <h2>📋 活动总览</h2>
+  <p class="desc">下面设计了 <strong>两个备选方案</strong>，根据你器材的准备情况选一个。两个方案都是 10 分钟，目标一样：快速点燃好奇心、让大脑进入"发现问题 → 用硬件解决"的模式，然后无缝衔接到网页工具。</p>
+
+  <div class="option-row">
+    <div class="option-card">
+      <div class="tag">方案 A · 推荐</div>
+      <h3>🔧 硬件连连看</h3>
+      <p>把真实硬件模块摆出来，孩子动手摸、配对、编故事。适合器材已经准备好的情况，实物最能激发创作欲。</p>
+    </div>
+    <div class="option-card">
+      <div class="tag">方案 B · 备用</div>
+      <h3>💡 问题快闪</h3>
+      <p>用问题卡片激发思考，不需要实物硬件。适合器材还在箱子里、或者不想在暖场环节分发器材的情况。</p>
+    </div>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-item">
+      <div class="label">核心目标</div>
+      <div class="value">激活设计思维，降低"硬件创作"的心理门槛</div>
+    </div>
+    <div class="info-item">
+      <div class="label">关键产出</div>
+      <div class="value">每人/每组至少说出一个"硬件能解决的问题"</div>
+    </div>
+    <div class="info-item">
+      <div class="label">衔接方式</div>
+      <div class="value">暖场最后一句话带出网页工具 → 打开 hw-design-thinking.html</div>
+    </div>
+    <div class="info-item">
+      <div class="label">适配年级</div>
+      <div class="value">三年级听热闹，初中生想逻辑，各取所需</div>
+    </div>
+  </div>
+</div>
+
+<!-- Hardware Inventory -->
+<div class="card">
+  <h2>📦 你的器材包总览（科创营大班 ESP32-S3 套件 ×15）</h2>
+  <p class="desc">根据你发的两份清单整理。暖场展示只需要挑其中一部分，剩下的留着后面动手环节用。</p>
+
+  <table>
+    <tr><th>类别</th><th>模块名称</th><th>数量</th><th>暖场展示？</th></tr>
+    <tr>
+      <td rowspan="2" style="font-weight:700;">🖥 主控</td>
+      <td>ESP32-S3 核心板 + 扩展板</td><td>×15</td>
+      <td>可以先不摆——这些是后面动手用的</td>
+    </tr>
+    <tr>
+      <td>Arduino Nano + 扩展板（存量）</td><td>×15 + 21</td>
+      <td></td>
+    </tr>
+    <tr style="background:#fff8f0;">
+      <td rowspan="5" style="font-weight:700;">👁 传感器<br>（输入）</td>
+      <td><strong>⭐ 超声波测距模块 HC-SR04</strong></td><td>×15</td><td><strong>✅ 摆！</strong> 手一挥数字就变，最直观</td>
+    </tr>
+    <tr style="background:#fff8f0;">
+      <td><strong>⭐ DHT11 温湿度传感器</strong></td><td>×15+9</td><td><strong>✅ 摆！</strong> "摸一下温度就变了"</td>
+    </tr>
+    <tr style="background:#fff8f0;">
+      <td><strong>⭐ 光敏传感器模块</strong></td><td>×15+14</td><td><strong>✅ 摆！</strong> 用手遮住→数字变化</td>
+    </tr>
+    <tr>
+      <td>INMP441 全向麦克风 / 声音传感器</td><td>×12+15</td><td>可选，但需要连板子才能演示</td>
+    </tr>
+    <tr>
+      <td>TOF 激光测距 / 红外传感器 / EC11 编码器</td><td>×12+15+12</td><td>留给后面动手用</td>
+    </tr>
+    <tr style="background:#fff8f0;">
+      <td rowspan="5" style="font-weight:700;">🔊 输出<br>（动作/声光）</td>
+      <td><strong>⭐ WS2812 RGB 幻彩灯带</strong></td><td>×12</td><td><strong>✅ 摆！</strong> 亮起来就是WOW时刻</td>
+    </tr>
+    <tr style="background:#fff8f0;">
+      <td><strong>⭐ SG90 舵机</strong></td><td>×15+38</td><td><strong>✅ 摆！</strong> 会动的东西孩子最爱</td>
+    </tr>
+    <tr style="background:#fff8f0;">
+      <td><strong>⭐ 蜂鸣器模块（有源/无源）</strong></td><td>×15+12</td><td><strong>✅ 摆！</strong> 会叫=有生命</td>
+    </tr>
+    <tr style="background:#fff8f0;">
+      <td><strong>⭐ LED 交通信号灯模块</strong></td><td>×15+12</td><td><strong>✅ 摆！</strong> 红黄绿三色，都认识</td>
+    </tr>
+    <tr style="background:#fff8f0;">
+      <td><strong>⭐ 大按键模块</strong></td><td>×12+10</td><td><strong>✅ 摆！</strong> 按一下=有反应=互动感</td>
+    </tr>
+    <tr>
+      <td rowspan="3" style="font-weight:700;">📺 显示</td>
+      <td>1.3寸 OLED 屏幕</td><td>×15+12</td><td>可以摆一块，显示个表情😀</td>
+    </tr>
+    <tr>
+      <td>2.4寸 TFT LCD 彩色屏</td><td>×12</td><td>视觉效果更强，但需要提前烧好 demo</td>
+    </tr>
+    <tr style="background:#fff8f0;">
+      <td><strong>⭐ TM1637 4位数码管</strong></td><td>×12+18</td><td><strong>✅ 摆！</strong> 数字跳动，简单直观</td>
+    </tr>
+    <tr>
+      <td rowspan="2" style="font-weight:700;">🔌 其他</td>
+      <td>红外遥控套件</td><td>×12</td><td>遥控器按一下→接收灯闪=魔法感</td>
+    </tr>
+    <tr>
+      <td>面包板 / 杜邦线 / 电源适配器 / 电池</td><td>各×12+</td><td>不用摆，动手环节再发</td>
+    </tr>
+  </table>
+
+  <div class="tip">
+    <strong>暖场展示精选（9 件，从表格中 ⭐ 标注的挑）：</strong>超声波、温湿度、光敏、灯带、舵机、蜂鸣器、交通灯、大按键、数码管。这 9 件覆盖了「感应→反应→显示」的完整链路，而且每一件孩子都能在 3 秒内理解"它是干嘛的"。
+  </div>
+</div>
+
+<!-- Activity A -->
+<div class="card alt">
+  <h2><span class="step-num">A</span> 方案 A：硬件连连看（5 步，10 分钟）</h2>
+  <p class="desc">核心机制：真实模块 → 自由配对 → 编个脑洞故事。利用实物降低"硬件很难"的心理障碍，用手摸、用眼看、用嘴说。</p>
+
+  <div class="tip" style="margin-bottom:16px;">
+    <strong>🔌 课前准备清单：</strong>从器材包里取出以下 10 件摆在教室中央的桌子上（每样 2-3 个就够，不用全摆）：<br>
+    ① 超声波模块 ② WS2812 灯带（提前接好电源让它亮着更炸） ③ 舵机 ④ 蜂鸣器 ⑤ LED 交通灯 ⑥ 大按键 ⑦ DHT11 温湿度 ⑧ 光敏传感器 ⑨ TM1637 数码管 ⑩ 1.3寸 OLED（显示个 😀）。<br>
+    每件旁边放一张手写标签："我能______"（比如超声波→"我能测量距离"，舵机→"我能转动"）。
+  </div>
+
+  <table>
+    <tr><th style="width:80px;">步骤</th><th style="width:100px;">时间</th><th>做什么</th><th>关键话术</th></tr>
+    <tr>
+      <td>1. 摆摊</td>
+      <td>课前</td>
+      <td>从上面 ⭐ 清单中选 10 样摆在教室中央桌子上。每样旁边放标签卡。</td>
+      <td>（课前准备，不说话）</td>
+    </tr>
+    <tr>
+      <td>2. 惊呼</td>
+      <td>1'</td>
+      <td>沉默展示 3 件：① 超声波——手靠近、移开，看数码管数字跳 ② WS2812 灯带——通电，七彩流光 ③ 舵机——让它左右转。全程不解释，只用动作。孩子们会自己"哇"出来。</td>
+      <td>"……（沉默展示 30 秒，让好奇心自己发酵）……这些东西你们今天都能玩。但在玩之前，我们先来一个 5 分钟的大脑热身游戏。"</td>
+    </tr>
+    <tr>
+      <td>3. 配对</td>
+      <td>3'</td>
+      <td>每人从桌子上拿 <strong>一个模块</strong>（可以走过去挑，不着急）。拿好后在房间里走动，找一个你完全不认识的人组成一对。两个人凑在一起，你们手上就有 <strong>两个模块</strong> 了。</td>
+      <td>"现在每个人去桌上拿一样你觉得最酷的东西，然后找一个你不认识的伙伴。你们俩手里的东西加在一起，就是个团队了。"<br><br>（混龄分组自然发生——大小孩子随机配对）</td>
+    </tr>
+    <tr>
+      <td>4. 脑洞</td>
+      <td>4'</td>
+      <td>每对搭档有 <strong>2 分钟</strong> 回答一个问题：<strong>"把你们俩的东西组合起来，能做出什么？"</strong><br><br>规则：越离谱越好！回答要用这个句式：<br>"如果我有（模块A）和（模块B），我就能做一个（作品名），它可以（做什么）。"</td>
+      <td>"不用管它能不能真的做出来！越是疯狂的想法越好。比如：超声波 + 蜂鸣器 = '防偷吃警报器'，有人靠近冰箱就大叫！"<br><br>"给你们 2 分钟，大声讨论，想到什么说什么。"</td>
+    </tr>
+    <tr>
+      <td>5. 快秀</td>
+      <td>2'</td>
+      <td>随机点 <strong>3 组</strong> 用一句话分享。老师用夸张的语气回应，不评价好坏，只说"有意思！""这个我真没想到！"</td>
+      <td>"好，时间到！我来随机点三组分享——不用上台，就站起来大声说一句。"<br><br>（听完所有分享后）"你们刚才做的事情，就是产品经理每天做的事情：发现问题 → 想方案。接下来我们打开电脑，用一个小工具帮你把这个想法变得更具体、更厉害！"</td>
+    </tr>
+  </table>
+
+  <div class="tip">
+    <strong>老师注意：</strong>步骤 4 是核心。如果孩子卡住了，给 3 个引导问题帮助打开思路：① 这个东西能感应到什么？② 那个东西能动/能亮/能叫吗？③ 感应到以后让它动一下/亮一下/叫一下，能帮谁解决什么问题？
+  </div>
+</div>
+
+<!-- Activity B -->
+<div class="card alt">
+  <h2><span class="step-num">B</span> 方案 B：问题快闪（4 步，10 分钟）</h2>
+  <p class="desc">核心机制：问题卡片 → 随机抽取 → 脑洞解法。不需要任何硬件实物，只需要 6 张卡片。适合器材没准备好或想先让思维跑起来的场景。</p>
+
+  <div class="tip">
+    <strong>课前准备：</strong>打印/手写 6 张"问题卡"，每张卡片一面写一个问题，另一面空白。问题要贴近孩子的日常——让他们一看就觉得"这个我遇到过！"
+  </div>
+
+  <p style="font-weight:600;margin:12px 0 4px;">📝 推荐的 6 个问题：</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:16px;">
+    <div style="background:#fafbfc;border-radius:10px;padding:10px 14px;font-size:13px;">💤 早上总是起不来，闹钟响了又关掉</div>
+    <div style="background:#fafbfc;border-radius:10px;padding:10px 14px;font-size:13px;">🚪 弟弟/妹妹总是偷偷进我房间</div>
+    <div style="background:#fafbfc;border-radius:10px;padding:10px 14px;font-size:13px;">📚 书包太重了，每天背得肩膀疼</div>
+    <div style="background:#fafbfc;border-radius:10px;padding:10px 14px;font-size:13px;">🌱 妈妈总忘记给阳台的花浇水</div>
+    <div style="background:#fafbfc;border-radius:10px;padding:10px 14px;font-size:13px;">🍪 零食放在客厅总被爸爸偷吃</div>
+    <div style="background:#fafbfc;border-radius:10px;padding:10px 14px;font-size:13px;">😴 上课犯困，但老师一走过来就精神了</div>
+  </div>
+
+  <table>
+    <tr><th style="width:80px;">步骤</th><th style="width:100px;">时间</th><th>做什么</th></tr>
+    <tr>
+      <td>1. 抽卡</td>
+      <td>1'</td>
+      <td>把 6 张问题卡背面朝上放在桌上。每 2-3 个孩子一组，每组抽一张。告诉他们："你们抽到的就是一个真实的人遇到的真实烦恼。"</td>
+    </tr>
+    <tr>
+      <td>2. 加戏</td>
+      <td>2'</td>
+      <td>每个小组在问题卡空白面，用 1 分钟补充具体情节："这个人是谁？他什么情况下最惨？"让问题变得有"人味"。</td>
+    </tr>
+    <tr>
+      <td>3. 爆改</td>
+      <td>5'</td>
+      <td>老师亮出 <strong>一个万能句式</strong>，写在白板上：<br><br><strong>"如果我有____（感应器），它就能____（做什么），帮____（谁）解决____（什么问题）。"</strong><br><br>每组的任务：用这个句式，给抽到的问题设计一个硬件方案。可以夸张、可以搞笑、可以科幻。大孩子负责想逻辑，小孩子负责给作品起名字。</td>
+    </tr>
+    <tr>
+      <td>4. 快秀</td>
+      <td>2'</td>
+      <td>每组一句话分享。老师总结："你们刚才做的事情就是'设计思维'——发现别人的烦恼，然后用科技去帮他们。"引出网页工具。</td>
+    </tr>
+  </table>
+</div>
+
+<!-- Deployment note -->
+<div class="card green">
+  <h2><span class="step-num">→</span> 暖场结束后的衔接（关键！）</h2>
+  <p class="desc">暖场活动的最后一个动作必须自然过渡到核心环节。下面是建议的过渡脚本：</p>
+
+  <div class="script-block">
+    <div class="speaker">🎤 老师说：</div>
+    <div class="line">
+      "你们刚才只用了 5 分钟就想出了一个点子。但是——真正厉害的产品不是拍脑袋想出来的，是<strong>一步步想出来的</strong>。<br><br>
+      我给你们看一个工具（打开 hw-design-thinking.html 投屏），它会像玩游戏一样带你：先选方向 → 回答问题 → 查资料 → 选功能 → 最后生成一个完整方案。<br><br>
+      接下来同桌两人一组，打开这个网页，把你刚才脑洞的那个想法正式'设计'一遍。<strong>记住——想法越具体，最后生成的方案就越酷！</strong>"
+    </div>
+  </div>
+
+  <div class="flow-chart">
+    <div class="flow-step">🔧 暖场<br>10分钟</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">📋 打开网页工具<br>全班同步操作</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">💬 思辨问答<br>AI 出题引导</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">🔍 调研 & 选功能</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">🛠 生成方案<br>+ 动手实现</div>
+  </div>
+</div>
+
+<!-- Teacher notes -->
+<div class="card">
+  <h2>📝 给老师的额外建议</h2>
+
+  <div class="tip" style="margin-bottom:16px;">
+    <strong>关于混龄：</strong>方案 A（硬件连连看）天然支持混龄——选模块时没人知道对方几年级，小孩子的脑洞 + 大孩子的逻辑 = 黄金组合。如果发现某组全是低年级，老师可以顺手塞一个大孩子进去当"技术顾问"。
+  </div>
+
+  <div class="tip" style="margin-bottom:16px;">
+    <strong>关于节奏：</strong>10 分钟很快，关键是"不停"。不要等人、不要纠错、不要深入讨论。暖场的目标只有一个——让嘴巴和大脑同时动起来。深入的思考留给后面的网页工具。
+  </div>
+
+  <div class="tip" style="margin-bottom:16px;">
+    <strong>关于失败处理：</strong>如果有人想不出来——没事。告诉他"那就编一个最好笑的想法"。暖场追求的是参与感，不是正确率。
+  </div>
+
+  <div class="tip">
+    <strong>关于实物展示：</strong>如果你在暖场环节亮出了硬件模块，一定要在暖场结束后收回去。告诉他们"想清楚要做什么之后，再回来拿"。这样他们用网页工具完成设计后会带着目标来拿硬件——有期待的动手才有深度。
+  </div>
+</div>
+
+</div>
+</body>
+</html>

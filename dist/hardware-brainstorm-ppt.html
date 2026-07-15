@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>硬件头脑风暴！</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --pink: #ff6b9d; --purple: #c471ed; --blue: #667eea;
+  --orange: #f5af19; --teal: #12c2e9; --green: #43e97b;
+  --navy: #1a2a40;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: #1a1a2e; overflow: hidden; height: 100vh; width: 100vw;
+}
+
+/* Slide container */
+.slides { position: relative; width: 100%; height: 100%; }
+.slide {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: 40px 60px;
+  opacity: 0; transform: scale(0.95);
+  transition: opacity 0.5s, transform 0.5s;
+  pointer-events: none; text-align: center;
+}
+.slide.active { opacity: 1; transform: scale(1); pointer-events: auto; z-index: 10; }
+
+/* Slide 1 - Title */
+.slide-1 { background: linear-gradient(135deg, #1a2a40, #2d1b69); }
+.slide-1 .big-icon { font-size: 100px; animation: bounce 1.5s infinite; }
+.slide-1 h1 { font-size: 64px; color: #fff; margin: 10px 0 20px; font-weight: 900; }
+.slide-1 h1 span { background: linear-gradient(90deg, var(--pink), var(--orange), var(--teal));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.slide-1 .sub { color: rgba(255,255,255,0.7); font-size: 24px; }
+
+/* Slide 2 - Hardware intro */
+.slide-2 { background: linear-gradient(135deg, #1a1a2e, #16213e); }
+.slide-2 h2 { color: #fff; font-size: 42px; margin-bottom: 40px; }
+.hw-grid { display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; }
+.hw-card {
+  background: rgba(255,255,255,0.08); border-radius: 24px; padding: 30px 24px;
+  min-width: 200px; flex: 1; max-width: 260px;
+  border: 2px solid rgba(255,255,255,0.12);
+  transition: transform 0.3s, border-color 0.3s;
+}
+.hw-card:hover { transform: translateY(-8px); }
+.hw-card .card-icon { font-size: 56px; margin-bottom: 12px; display: block; }
+.hw-card h3 { color: #fff; font-size: 22px; margin-bottom: 12px; }
+.hw-card .items { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.hw-card .item {
+  background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.85);
+  padding: 6px 14px; border-radius: 20px; font-size: 15px;
+}
+.hw-card.sense { border-color: var(--teal); }
+.hw-card.sense .card-icon { color: var(--teal); }
+.hw-card.show { border-color: var(--purple); }
+.hw-card.show .card-icon { color: var(--purple); }
+.hw-card.act { border-color: var(--orange); }
+.hw-card.act .card-icon { color: var(--orange); }
+
+/* Slide 3 - Step 1 */
+.slide-3 { background: linear-gradient(135deg, #0f3460, #16213e); }
+.slide-3 .step-num {
+  background: var(--teal); color: #fff; width: 80px; height: 80px;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 40px; font-weight: 900; margin-bottom: 24px;
+}
+.slide-3 h2 { color: #fff; font-size: 48px; margin-bottom: 16px; }
+.slide-3 p { color: rgba(255,255,255,0.7); font-size: 28px; }
+.slide-3 .hint { color: rgba(255,255,255,0.4); font-size: 20px; margin-top: 30px; }
+
+/* Slide 4 - Step 2 */
+.slide-4 { background: linear-gradient(135deg, #1a1a2e, #0f3460); }
+.slide-4 .step-num {
+  background: var(--purple); color: #fff; width: 80px; height: 80px;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 40px; font-weight: 900; margin-bottom: 24px;
+}
+.slide-4 h2 { color: #fff; font-size: 42px; margin-bottom: 16px; }
+.slide-4 p { color: rgba(255,255,255,0.7); font-size: 26px; }
+.slide-4 .pair-icon { font-size: 72px; margin-bottom: 20px; display: block; }
+
+/* Slide 5 - Step 3 Brainstorm */
+.slide-5 { background: linear-gradient(135deg, #2d1b69, #1a1a2e); }
+.slide-5 .step-num {
+  background: var(--orange); color: #fff; width: 80px; height: 80px;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 40px; font-weight: 900; margin-bottom: 24px;
+}
+.slide-5 h2 { color: #fff; font-size: 38px; margin-bottom: 24px; }
+.slide-5 .formula {
+  background: rgba(255,255,255,0.1); border-radius: 20px;
+  padding: 24px 32px; max-width: 700px; margin: 0 auto;
+}
+.slide-5 .formula .line { color: rgba(255,255,255,0.85); font-size: 22px; line-height: 2; }
+.slide-5 .formula .blank {
+  display: inline-block; border-bottom: 3px dashed var(--orange);
+  min-width: 120px; margin: 0 6px; color: var(--orange); font-weight: 700;
+}
+.slide-5 .note { color: rgba(255,255,255,0.4); font-size: 18px; margin-top: 24px; }
+
+/* Slide 6 - Example */
+.slide-6 { background: linear-gradient(135deg, #1a2a40, #0f3460); }
+.slide-6 h2 { color: #fff; font-size: 40px; margin-bottom: 30px; }
+.slide-6 .example-box {
+  background: rgba(255,255,255,0.1); border-radius: 24px;
+  padding: 32px; max-width: 650px; border: 2px solid rgba(255,255,255,0.15);
+}
+.slide-6 .combo { display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 24px; }
+.slide-6 .combo .part {
+  background: rgba(255,255,255,0.12); border-radius: 16px;
+  padding: 16px 24px; text-align: center;
+}
+.slide-6 .combo .part .emoji { font-size: 48px; display: block; margin-bottom: 6px; }
+.slide-6 .combo .part .name { color: rgba(255,255,255,0.9); font-size: 18px; }
+.slide-6 .combo .plus { color: var(--orange); font-size: 36px; font-weight: 900; }
+.slide-6 .result { color: var(--green); font-size: 32px; font-weight: 800; }
+.slide-6 .result-desc { color: rgba(255,255,255,0.7); font-size: 20px; margin-top: 8px; }
+
+/* Slide 7 - Share */
+.slide-7 { background: linear-gradient(135deg, #16213e, #1a1a2e); }
+.slide-7 .step-num {
+  background: var(--green); color: #fff; width: 80px; height: 80px;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 40px; font-weight: 900; margin-bottom: 24px;
+}
+.slide-7 h2 { color: #fff; font-size: 44px; margin-bottom: 16px; }
+.slide-7 p { color: rgba(255,255,255,0.7); font-size: 24px; max-width: 600px; }
+.slide-7 .emoji-big { font-size: 72px; display: block; margin-bottom: 16px; }
+
+/* Slide 8 - Transition */
+.slide-8 { background: linear-gradient(135deg, #1a2a40, #2d1b69); }
+.slide-8 .big-icon { font-size: 80px; display: block; margin-bottom: 20px; }
+.slide-8 h2 { color: #fff; font-size: 42px; margin-bottom: 20px; }
+.slide-8 p { color: rgba(255,255,255,0.7); font-size: 24px; max-width: 600px; line-height: 1.6; }
+.slide-8 .cta {
+  margin-top: 30px; background: linear-gradient(90deg, var(--pink), var(--purple));
+  color: #fff; font-size: 22px; padding: 16px 40px; border-radius: 50px;
+  border: none; cursor: pointer; font-weight: 700;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 8px 30px rgba(196,113,237,0.4);
+}
+.slide-8 .cta:hover { transform: scale(1.05); box-shadow: 0 12px 40px rgba(196,113,237,0.6); }
+
+/* Nav */
+.nav {
+  position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 10px; z-index: 100;
+}
+.nav-dot {
+  width: 14px; height: 14px; border-radius: 50%; background: rgba(255,255,255,0.25);
+  cursor: pointer; transition: all 0.3s; border: none;
+}
+.nav-dot.active { background: var(--orange); transform: scale(1.3); }
+.nav-dot.done { background: rgba(255,255,255,0.5); }
+
+.page-indicator {
+  position: fixed; top: 20px; right: 30px; color: rgba(255,255,255,0.4);
+  font-size: 16px; z-index: 100; font-weight: 600;
+}
+
+/* Animations */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(3deg); }
+}
+
+.floating { animation: float 3s ease-in-out infinite; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .slide { padding: 20px 24px; }
+  .slide-1 h1 { font-size: 42px; }
+  .slide-1 .big-icon { font-size: 70px; }
+  .hw-grid { flex-direction: column; align-items: center; }
+  .hw-card { max-width: 100%; min-width: auto; width: 100%; }
+  .slide-5 .formula .line { font-size: 18px; }
+}
+</style>
+</head>
+<body>
+
+<div class="slides">
+
+  <!-- Slide 1: Title -->
+  <div class="slide slide-1 active" data-index="0">
+    <span class="big-icon">🧠</span>
+    <h1><span>硬件头脑风暴</span></h1>
+    <p class="sub">来玩个游戏吧！</p>
+  </div>
+
+  <!-- Slide 2: What's on the table -->
+  <div class="slide slide-2" data-index="1">
+    <h2>🔧 桌上有什么？</h2>
+    <div class="hw-grid">
+      <div class="hw-card sense">
+        <span class="card-icon">👁</span>
+        <h3>感应器</h3>
+        <div class="items">
+          <span class="item">超声波</span>
+          <span class="item">温湿度</span>
+          <span class="item">光敏</span>
+          <span class="item">声音</span>
+        </div>
+      </div>
+      <div class="hw-card show">
+        <span class="card-icon">📺</span>
+        <h3>显示屏</h3>
+        <div class="items">
+          <span class="item">数码管</span>
+          <span class="item">OLED屏</span>
+          <span class="item">TFT彩屏</span>
+        </div>
+      </div>
+      <div class="hw-card act">
+        <span class="card-icon">🔊</span>
+        <h3>会动会亮会叫</h3>
+        <div class="items">
+          <span class="item">彩色灯带</span>
+          <span class="item">舵机</span>
+          <span class="item">蜂鸣器</span>
+          <span class="item">交通灯</span>
+          <span class="item">大按键</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 3: Step 1 - Pick one -->
+  <div class="slide slide-3" data-index="2">
+    <div class="step-num">1</div>
+    <h2>👆 挑一个！</h2>
+    <p>走过去，拿一样<br>你觉得最酷的东西</p>
+    <p class="hint">随便挑，喜欢哪个拿哪个</p>
+  </div>
+
+  <!-- Slide 4: Step 2 - Find partner -->
+  <div class="slide slide-4" data-index="3">
+    <span class="pair-icon floating">🤝</span>
+    <div class="step-num">2</div>
+    <h2>找一个伙伴！</h2>
+    <p>找一个你还不认识的人<br>两个人一组</p>
+  </div>
+
+  <!-- Slide 5: Step 3 - Brainstorm -->
+  <div class="slide slide-5" data-index="4">
+    <div class="step-num">3</div>
+    <h2>💡 脑洞大开！</h2>
+    <div class="formula">
+      <p class="line">把 <span class="blank">你的</span> 和 <span class="blank">伙伴的</span></p>
+      <p class="line">合在一起</p>
+      <p class="line" style="font-size: 28px; margin-top: 10px;">能做出 <span class="blank" style="min-width: 180px;">什么？</span></p>
+    </div>
+    <p class="note">越离谱越好！不用管能不能真的做出来</p>
+  </div>
+
+  <!-- Slide 6: Example -->
+  <div class="slide slide-6" data-index="5">
+    <h2>🎯 比如这样……</h2>
+    <div class="example-box">
+      <div class="combo">
+        <div class="part">
+          <span class="emoji">📏</span>
+          <span class="name">超声波</span>
+        </div>
+        <span class="plus">+</span>
+        <div class="part">
+          <span class="emoji">🔔</span>
+          <span class="name">蜂鸣器</span>
+        </div>
+      </div>
+      <div class="result">＝ 防偷吃警报器！</div>
+      <p class="result-desc">有人靠近冰箱就大叫 📢</p>
+    </div>
+  </div>
+
+  <!-- Slide 7: Share -->
+  <div class="slide slide-7" data-index="6">
+    <span class="emoji-big floating">🎤</span>
+    <div class="step-num">4</div>
+    <h2>分享时间！</h2>
+    <p>3 组同学，站起来<br>一句话说出你们的想法</p>
+  </div>
+
+  <!-- Slide 8: Transition -->
+  <div class="slide slide-8" data-index="7">
+    <span class="big-icon">🚀</span>
+    <h2>接下来……</h2>
+    <p>刚才只用了几分钟，<br>你们就想出了一个超酷的点子。</p>
+    <p style="margin-top: 12px; color: var(--green); font-weight: 700;">
+      但现在，我们要用电脑<br>把这个想法变得更厉害！
+    </p>
+  </div>
+
+</div>
+
+<!-- Navigation dots -->
+<div class="nav" id="navDots"></div>
+<div class="page-indicator" id="pageNum">1 / 8</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+  let transitioning = false;
+
+  // Create nav dots
+  const navDots = document.getElementById('navDots');
+  for (let i = 0; i < total; i++) {
+    const dot = document.createElement('button');
+    dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+    dot.onclick = () => goTo(i);
+    navDots.appendChild(dot);
+  }
+
+  function updatePageNum() {
+    document.getElementById('pageNum').textContent = (current + 1) + ' / ' + total;
+  }
+
+  function updateDots() {
+    const dots = navDots.querySelectorAll('.nav-dot');
+    dots.forEach((d, i) => {
+      d.className = 'nav-dot';
+      if (i === current) d.classList.add('active');
+      else if (i < current) d.classList.add('done');
+    });
+  }
+
+  function goTo(index) {
+    if (transitioning || index === current || index < 0 || index >= total) return;
+    transitioning = true;
+    slides[current].classList.remove('active');
+    slides[index].classList.add('active');
+    current = index;
+    updateDots();
+    updatePageNum();
+    setTimeout(() => { transitioning = false; }, 500);
+  }
+
+  function next() { goTo(current + 1); }
+  function prev() { goTo(current - 1); }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+      e.preventDefault();
+      next();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      prev();
+    }
+  });
+
+  // Touch swipe
+  let touchStartX = 0;
+  let touchStartY = 0;
+  document.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+  document.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+      if (dx < 0) next();
+      else prev();
+    }
+  });
+
+  // Click to advance (on non-interactive areas)
+  document.querySelector('.slides').addEventListener('click', (e) => {
+    if (e.target.closest('.nav-dot') || e.target.closest('button')) return;
+    next();
+  });
+})();
+</script>
+
+</body>
+</html>
