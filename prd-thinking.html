@@ -692,6 +692,8 @@ ${STATE.allContext.answers}
 
 [搜索关键词]
 舞台走位图, 导演排戏流程, 剧本排练视频, 在线站位规划工具, 舞台调度案例`;
+
+    const result = await callAI(prompt);
     STATE.researchData = parseResearch(result);
     renderResearchUI();
   } catch (e) {
