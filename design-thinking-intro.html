@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>什么是设计思维？ - 小P讲给小学生</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --navy: #1a2a40; --navy-light: #243550; --orange: #e67e22; --orange-light: #f5af4f;
+  --gold: #f0a030; --green: #2ecc71; --white: #ffffff;
+  --text: #2c3e50; --text-light: #7f8c8d;
+  --bg: #eef2f7; --card-bg: #ffffff; --border: #dde3ea;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(26,42,64,0.04) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(230,126,34,0.05) 0%, transparent 50%);
+  height: 100vh; color: var(--text); overflow: hidden;
+}
+
+.container {
+  max-width: 860px; margin: 0 auto; height: 100vh;
+  display: flex; flex-direction: column; padding: 12px 20px 10px;
+  position: relative; z-index: 1;
+}
+
+/* Progress */
+.progress-bar {
+  display: flex; gap: 5px; margin-bottom: 10px; flex-shrink: 0;
+}
+.progress-dot {
+  flex: 1; height: 5px; background: var(--border); border-radius: 3px; transition: all 0.4s ease;
+}
+.progress-dot.active { background: linear-gradient(90deg, var(--navy), var(--orange)); }
+
+/* Slide */
+.slide {
+  flex: 1;
+  display: none; flex-direction: column; justify-content: flex-start; align-items: center;
+  text-align: center; animation: fadeIn 0.5s ease; min-height: 0; overflow-y: auto; overflow-x: hidden;
+}
+.slide.active { display: flex; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-icon { font-size: 44px; margin-bottom: 6px; display: block; }
+.slide h1 {
+  font-size: 28px; font-weight: 800; margin-bottom: 6px; color: var(--navy);
+}
+.slide h1 span { color: var(--orange); }
+.slide h2 { font-size: 24px; font-weight: 800; margin-bottom: 6px; color: var(--navy); }
+.slide p { font-size: 15px; color: var(--text-light); line-height: 1.6; max-width: 720px; }
+.slide .highlight { color: var(--orange); font-weight: 700; }
+
+/* Cards */
+.card-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; justify-content: center; margin-top: 10px; width: 100%; }
+.card-row.two { grid-template-columns: repeat(2, 1fr); max-width: 520px; margin-left: auto; margin-right: auto; }
+.card {
+  background: var(--card-bg); border-radius: 14px; padding: 12px 10px;
+  box-shadow: 0 4px 16px rgba(26, 42, 64, 0.08);
+  border: 2px solid var(--border); transition: all 0.3s ease;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+}
+.card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(26, 42, 64, 0.14); border-color: var(--orange); }
+.card .emoji { font-size: 30px; margin-bottom: 5px; }
+.card h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; color: var(--navy); }
+.card p { font-size: 12px; color: var(--text-light); line-height: 1.5; }
+
+/* Phase list */
+.phase-list { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 640px; margin-top: 10px; text-align: left; }
+.phase-item {
+  display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+  background: var(--card-bg); border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(26, 42, 64, 0.06); border-left: 4px solid var(--navy);
+  transition: all .3s;
+}
+.phase-item:hover { border-left-color: var(--orange); background: #fff8f0; }
+.phase-num {
+  width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--navy), var(--navy-light));
+  color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; flex-shrink: 0;
+}
+.phase-name { font-weight: 700; font-size: 14px; color: var(--navy); }
+.phase-desc { font-size: 12px; color: var(--text-light); display: block; margin-top: 2px; }
+
+/* Five phases standard */
+.five-phase { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 10px; width: 100%; }
+.five-phase .pcard {
+  background: var(--card-bg); border-radius: 14px; padding: 12px 8px; flex: 1; min-width: 90px; max-width: 140px;
+  box-shadow: 0 4px 16px rgba(26, 42, 64, 0.06); border: 2px solid var(--border);
+  transition: all .3s; display: flex; flex-direction: column; align-items: center;
+}
+.five-phase .pcard:hover { transform: translateY(-3px); border-color: var(--orange); }
+.five-phase .pcard .pemoji { font-size: 28px; margin-bottom: 4px; }
+.five-phase .pcard .pname { font-size: 13px; font-weight: 700; color: var(--navy); }
+.five-phase .pcard .pdesc { font-size: 10px; color: var(--text-light); line-height: 1.4; margin-top: 3px; }
+
+/* Comparison */
+.compare-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 12px; width: 100%; }
+.compare-box {
+  background: var(--card-bg); border-radius: 14px; padding: 12px 14px; flex: 1;
+  min-width: 200px; max-width: 320px; text-align: left;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+}
+.compare-box.bad { border-left: 4px solid #e74c3c; }
+.compare-box.good { border-left: 4px solid var(--green); }
+.compare-box .tag { font-size: 11px; font-weight: 700; margin-bottom: 5px; }
+.compare-box.bad .tag { color: #e74c3c; }
+.compare-box.good .tag { color: var(--green); }
+.compare-box h3 { font-size: 15px; margin-bottom: 5px; color: var(--navy); }
+.compare-box ul { margin-left: 16px; font-size: 12px; color: var(--text-light); line-height: 1.6; }
+
+/* Example */
+.example-box {
+  background: linear-gradient(135deg, #fff8f0, #fff); border: 2px solid var(--orange-light);
+  border-radius: 14px; padding: 14px 18px; max-width: 620px; text-align: left; width: 100%; margin-top: 10px;
+}
+.example-box h3 { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+
+/* Navigation */
+.nav-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 8px; margin-top: 8px; flex-shrink: 0;
+}
+.nav-btn {
+  background: var(--card-bg); color: var(--navy); border: 2px solid var(--navy);
+  padding: 8px 20px; border-radius: 50px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.3s ease; font-family: inherit;
+}
+.nav-btn:hover { background: #eaf0f9; transform: translateY(-2px); }
+.nav-btn.primary {
+  background: linear-gradient(135deg, var(--navy), var(--navy-light)); color: var(--card-bg);
+  border: none; box-shadow: 0 4px 16px rgba(26, 42, 64, 0.25);
+}
+.nav-btn.primary:hover { box-shadow: 0 6px 24px rgba(26, 42, 64, 0.35); }
+.nav-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+.slide-counter { font-size: 12px; color: var(--text-light); font-weight: 600; }
+
+/* CTA */
+.cta-btn {
+  display: inline-block; margin-top: 12px;
+  background: linear-gradient(135deg, var(--navy), var(--navy-light)); color: var(--card-bg);
+  padding: 12px 28px; border-radius: 50px; font-size: 15px; font-weight: 700;
+  text-decoration: none; box-shadow: 0 4px 16px rgba(26, 42, 64, 0.25);
+  transition: all 0.3s ease;
+}
+.cta-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 32px rgba(26, 42, 64, 0.35); }
+
+.footer { text-align: center; padding: 4px 0 0; color: var(--text-light); font-size: 11px; flex-shrink: 0; }
+.footer span { color: var(--navy); font-weight: 600; }
+
+@media (max-width: 640px) {
+  .container { padding: 10px 14px; }
+  .slide h1 { font-size: 22px; }
+  .slide h2 { font-size: 20px; }
+  .slide p { font-size: 13px; }
+  .slide-icon { font-size: 36px; }
+  .card-row { grid-template-columns: 1fr; }
+  .card-row.two { grid-template-columns: 1fr; max-width: 100%; }
+  .five-phase { gap: 6px; }
+  .five-phase .pcard { min-width: 70px; max-width: 110px; padding: 8px 6px; }
+  .compare-box { min-width: 100%; max-width: 100%; }
+  .nav-btn { padding: 7px 14px; font-size: 12px; }
+  .cta-btn { padding: 10px 22px; font-size: 14px; }
+  .phase-item { padding: 8px 10px; }
+  .phase-num { width: 26px; height: 26px; font-size: 12px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="progress-bar" id="progressBar"></div>
+
+  <!-- Slide 1: 封面 -->
+  <div class="slide active" data-slide="0">
+    <span class="slide-icon">🧠</span>
+    <h1>什么是<span>设计思维</span>？</h1>
+    <p>小P带你认识创造者们的「<span class="highlight">超级脑力工具</span>」——<span class="highlight">设计思维（Design Thinking）</span></p>
+    <p style="margin-top:8px;font-size:13px;">它像侦探破案、像探险家找路……我们一起来看看！</p>
+  </div>
+
+  <!-- Slide 2: 三个类比 -->
+  <div class="slide" data-slide="1">
+    <h2>设计思维是什么？🤔</h2>
+    <p>设计思维就是一套「<span class="highlight">解决问题的思考方法</span>」，帮你在动手做之前，先把问题想明白。</p>
+    <div class="card-row">
+      <div class="card">
+        <div class="emoji">🔍</div>
+        <h3>像侦探</h3>
+        <p>先观察、调查，搞清楚真相再行动。</p>
+      </div>
+      <div class="card">
+        <div class="emoji">🧭</div>
+        <h3>像指南针</h3>
+        <p>先确定方向，再一步步往目标走。</p>
+      </div>
+      <div class="card">
+        <div class="emoji">🍳</div>
+        <h3>像试菜</h3>
+        <p>先尝一口，不好吃再调整，而不是等整桌菜都做完了才后悔。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 3: 不做设计思维会怎样 -->
+  <div class="slide" data-slide="2">
+    <span class="slide-icon">🏠</span>
+    <h2>没有设计思维会怎样？</h2>
+    <div class="compare-row">
+      <div class="compare-box bad">
+        <div class="tag">❌ 没有设计思维</div>
+        <h3>拍脑袋就做</h3>
+        <ul>
+          <li>做了一个没人需要的东西</li>
+          <li>做着做着发现想错了方向</li>
+          <li>材料买错、接线接错</li>
+          <li>最后大家都很沮丧</li>
+        </ul>
+      </div>
+      <div class="compare-box good">
+        <div class="tag">✅ 有设计思维</div>
+        <h3>先想清楚再做</h3>
+        <ul>
+          <li>知道是谁需要这个作品</li>
+          <li>清楚要解决什么问题</li>
+          <li>调研后再选硬件和功能</li>
+          <li>思路清晰，动手顺利</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 4: 经典五步法 -->
+  <div class="slide" data-slide="3">
+    <h2>经典设计思维：五步法 🌟</h2>
+    <p>全球的创造者都在用这套方法，像 <span class="highlight">探险地图</span> 一样：</p>
+    <div class="five-phase">
+      <div class="pcard">
+        <div class="pemoji">👂</div>
+        <div class="pname">共情</div>
+        <div class="pdesc">走进用户的世界，理解他们真正需要什么</div>
+      </div>
+      <div class="pcard">
+        <div class="pemoji">🎯</div>
+        <div class="pname">定义</div>
+        <div class="pdesc">把模糊的想法变成清晰的问题</div>
+      </div>
+      <div class="pcard">
+        <div class="pemoji">💡</div>
+        <div class="pname">构思</div>
+        <div class="pdesc">脑洞大开，想各种可能的方案</div>
+      </div>
+      <div class="pcard">
+        <div class="pemoji">🛠️</div>
+        <div class="pname">原型</div>
+        <div class="pdesc">快速做一个简单的版本出来试试</div>
+      </div>
+      <div class="pcard">
+        <div class="pemoji">🔁</div>
+        <div class="pname">测试</div>
+        <div class="pdesc">拿给用户试，发现问题再回来改</div>
+      </div>
+    </div>
+    <p style="margin-top:8px;font-size:13px;">这五步不是一条直线，而是可以 <span class="highlight">来回循环</span> 的——发现不对就回去重新想！</p>
+  </div>
+
+  <!-- Slide 5: 例子 - 做一个提醒喝水装置 -->
+  <div class="slide" data-slide="4">
+    <span class="slide-icon">💧</span>
+    <h2>举个例子：做一个「提醒喝水小助手」</h2>
+    <div class="example-box">
+      <h3>👂 共情</h3>
+      <p style="font-size:13px;margin-bottom:8px;">和同学聊天发现：大家上课忙起来就忘了喝水，一天只喝了半杯。</p>
+      <h3>🎯 定义</h3>
+      <p style="font-size:13px;margin-bottom:8px;">核心问题：怎么用智能硬件提醒小学生定时喝水？</p>
+      <h3>💡 构思</h3>
+      <p style="font-size:13px;margin-bottom:8px;">用 LED 亮灯提醒？蜂鸣器叫？OLED 上显示「该喝水啦」？</p>
+      <h3>🛠️ 原型</h3>
+      <p style="font-size:13px;margin-bottom:8px;">用 ESP32-S3 + LED + 蜂鸣器搭一个，写程序让它们定时工作。</p>
+      <h3>🔁 测试</h3>
+      <p style="font-size:13px;">拿给同学用一天，发现蜂鸣器太吵了，改成 LED 柔和亮灯+字提醒。</p>
+    </div>
+  </div>
+
+  <!-- Slide 6: 我们硬件工坊的六步 -->
+  <div class="slide" data-slide="5">
+    <h2>我们的硬件工坊：六步走 🚀</h2>
+    <p>结合设计思维和 ESP32-S3 硬件创作，我们把它变成了 <span class="highlight">6 个步骤</span>：</p>
+    <div class="phase-list">
+      <div class="phase-item">
+        <div class="phase-num">1</div>
+        <div>
+          <div class="phase-name">走近用户 👀</div>
+          <div class="phase-desc">选一个智能硬件方向，思考你的作品给谁用</div>
+        </div>
+      </div>
+      <div class="phase-item">
+        <div class="phase-num">2</div>
+        <div>
+          <div class="phase-name">发现真问题 🔍</div>
+          <div class="phase-desc">确认核心问题：你的用户最需要解决什么？</div>
+        </div>
+      </div>
+      <div class="phase-item">
+        <div class="phase-num">3</div>
+        <div>
+          <div class="phase-name">调研出方案 📚</div>
+          <div class="phase-desc">小组讨论、查资料，写出初步方案并交给 AI 打分</div>
+        </div>
+      </div>
+      <div class="phase-item">
+        <div class="phase-num">4</div>
+        <div>
+          <div class="phase-name">脑洞大开 💡</div>
+          <div class="phase-desc">基于 ESP32-S3 的传感器和执行器，选择你想要的功能</div>
+        </div>
+      </div>
+      <div class="phase-item">
+        <div class="phase-num">5</div>
+        <div>
+          <div class="phase-name">多维评价 📊</div>
+          <div class="phase-desc">从 6 个维度给你的想法打分，点击低分维度来深度提升</div>
+        </div>
+      </div>
+      <div class="phase-item">
+        <div class="phase-num">6</div>
+        <div>
+          <div class="phase-name">我的作品方案 🛠️</div>
+          <div class="phase-desc">生成完整的硬件清单、接线表、编程思路</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 7: 为什么用设计思维做硬件 -->
+  <div class="slide" data-slide="6">
+    <h2>为什么做硬件也要设计思维？🔧</h2>
+    <p>做硬件和做网页不一样——接错一根线就要重新来！</p>
+    <div class="card-row">
+      <div class="card">
+        <div class="emoji">💰</div>
+        <h3>省材料</h3>
+        <p>想清楚再买零件，不浪费传感器和模块。</p>
+      </div>
+      <div class="card">
+        <div class="emoji">⏱️</div>
+        <h3>省时间</h3>
+        <p>先确认方案再动手，不反复拆线重接。</p>
+      </div>
+      <div class="card">
+        <div class="emoji">😊</div>
+        <h3>真有用</h3>
+        <p>从用户需求出发，做出的东西才有人真的想用。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 8: 今天我们要做什么 -->
+  <div class="slide" data-slide="7">
+    <span class="slide-icon">🛠️</span>
+    <h2>今天我们要做什么？</h2>
+    <p style="font-size:18px;">用 <span class="highlight">设计思维</span>，创造属于你的 <span class="highlight">ESP32-S3 智能硬件</span>！</p>
+    <p style="margin-top:8px;">选一个方向：智能家居、趣味玩具、环保助手、校园帮手……<br>然后跟着小P一步步思考、调研、设计，最后生成你的硬件方案。</p>
+    <a href="hw-design-thinking.html" class="cta-btn">👉 进入硬件工坊</a>
+  </div>
+
+  <!-- Slide 9: 结尾 -->
+  <div class="slide" data-slide="8">
+    <span class="slide-icon">🎉</span>
+    <h1>准备好了吗？</h1>
+    <p>设计思维不是大人专用的「高级方法」，<br>它是每个<span class="highlight">有想法的小朋友</span>都能掌握的 <span class="highlight">创造工具</span>。</p>
+    <p style="margin-top:10px;font-size:16px;">好的作品，从好的思考开始！</p>
+    <a href="hw-design-thinking.html" class="cta-btn">🚀 进入设计思维·硬件工坊</a>
+  </div>
+
+  <div class="nav-bar">
+    <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">← 上一页</button>
+    <span class="slide-counter" id="slideCounter">1 / 9</span>
+    <button class="nav-btn primary" id="nextBtn" onclick="changeSlide(1)">下一页 →</button>
+  </div>
+
+  <div class="footer">小P的设计思维小课堂 · 从想法到实物 <span>📋</span></div>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+let current = 0;
+
+const bar = document.getElementById('progressBar');
+for (let i = 0; i < total; i++) {
+  const d = document.createElement('div');
+  d.className = 'progress-dot';
+  bar.appendChild(d);
+}
+
+function updateSlide() {
+  slides.forEach((s, i) => { s.classList.toggle('active', i === current); });
+  const dots = document.querySelectorAll('.progress-dot');
+  dots.forEach((d, i) => { d.classList.toggle('active', i <= current); });
+  document.getElementById('slideCounter').textContent = `${current + 1} / ${total}`;
+  document.getElementById('prevBtn').disabled = current === 0;
+  document.getElementById('nextBtn').textContent = current === total - 1 ? '完成 🎉' : '下一页 →';
+}
+
+function changeSlide(dir) {
+  const next = current + dir;
+  if (next >= 0 && next < total) {
+    current = next;
+    updateSlide();
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') changeSlide(1);
+  if (e.key === 'ArrowLeft') changeSlide(-1);
+});
+
+updateSlide();
+</script>
+</body>
+</html>

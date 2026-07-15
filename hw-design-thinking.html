@@ -1,0 +1,1733 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>设计思维工坊 · 硬件创作</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --navy: #1a2a40; --navy-light: #243550; --navy-dark: #0d1b2a;
+  --orange: #e67e22; --orange-light: #f5af4f; --orange-dark: #c96a1c;
+  --gold: #f0a030;
+  --green: #2ecc71; --green-dark: #27ae60;
+  --bg: #eef2f7; --card: #ffffff; --text: #2c3e50; --text-light: #7f8c8d;
+  --border: #dde3ea;
+  --shadow: 0 4px 20px rgba(26,42,64,0.10);
+  --radius: 16px; --radius-sm: 12px;
+  --circuit-color: #bcc8d6;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg); background-image:
+    radial-gradient(circle at 20% 20%, rgba(26,42,64,0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(230,126,34,0.04) 0%, transparent 50%);
+  min-height: 100vh; color: var(--text); line-height: 1.6;
+}
+.container { max-width: 720px; margin: 0 auto; padding: 20px; }
+
+/* Header */
+.header { text-align: center; padding: 28px 0 14px; position: relative; }
+.header .icon { font-size: 44px; display: block; animation: pulse 2s infinite; }
+.header h1 { font-size: 26px; font-weight: 800; margin-bottom: 4px; color: var(--navy); }
+.header h1 span { color: var(--orange); }
+.header .sub { font-size: 13px; color: var(--text-light); }
+.header .sub a { color: var(--navy); font-weight: 600; text-decoration: none; margin: 0 4px; }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+
+/* Phase bar */
+.phase-bar { display: flex; gap: 6px; margin-bottom: 20px; align-items: center; }
+.phase-step { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.phase-dot-wrap { width: 100%; height: 4px; background: var(--border); border-radius: 2px; transition: all .4s; overflow: hidden; }
+.phase-dot-fill { height: 100%; width: 0; transition: width .5s ease; border-radius: 2px; }
+.phase-step.active .phase-dot-fill { width: 100%; background: linear-gradient(90deg, var(--navy), var(--orange)); }
+.phase-step.done .phase-dot-fill { width: 100%; background: var(--green); }
+.phase-label { font-size: 11px; color: var(--text-light); transition: color .3s; }
+.phase-step.active .phase-label { color: var(--navy); font-weight: 700; }
+.phase-step.done .phase-label { color: var(--green); }
+
+/* Main card */
+.main { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 28px; min-height: 340px; border-top: 3px solid var(--navy); }
+
+/* Messages */
+.msg { animation: fadeIn .4s ease; margin-bottom: 22px; }
+.msg-ai { display: flex; gap: 10px; align-items: flex-start; }
+.msg-ai .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--navy); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; box-shadow: 0 2px 8px rgba(26,42,64,.2); }
+.msg-ai .bubble { background: #f0f4fa; border-radius: 16px 16px 16px 4px; padding: 14px 18px; max-width: 560px; font-size: 14px; line-height: 1.7; }
+.msg-ai .bubble strong { color: var(--navy); }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Scenario grid */
+.cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap: 10px; margin: 16px 0; }
+.cat-card { background: #fafbfc; border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 16px 10px; cursor: pointer; text-align: center; transition: all .3s; }
+.cat-card:hover { border-color: var(--orange); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(230,126,34,.12); }
+.cat-card.selected { border-color: var(--orange); background: #fff8f0; box-shadow: 0 0 0 3px rgba(230,126,34,.15); }
+.cat-card.disabled { opacity: .35; pointer-events: none; }
+.cat-card .ci { font-size: 30px; display: block; margin-bottom: 5px; }
+.cat-card .cn { font-size: 13px; font-weight: 700; display: block; color: var(--navy); margin-bottom: 2px; }
+.cat-card .cd { font-size: 11px; color: var(--text-light); }
+.cat-count { font-size: 13px; color: var(--text-light); text-align: center; margin-bottom: 8px; }
+
+/* Choice cards */
+.choice-list { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.choice-card { background: #fafbfc; border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 14px 18px; cursor: pointer; transition: all .3s; display: flex; align-items: center; gap: 12px; }
+.choice-card:hover { border-color: var(--navy); background: #f0f4fa; }
+.choice-card.selected { border-color: var(--navy); background: #eaf0f9; }
+.choice-dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #ccc; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; }
+.choice-card.selected .choice-dot { background: var(--navy); border-color: var(--navy); }
+.choice-text { font-size: 14px; color: var(--text); }
+
+/* Check list */
+.check-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.check-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; background: #fafbfc; border: 2px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; transition: all .3s; }
+.check-item:hover { border-color: var(--navy); background: #f0f4fa; }
+.check-item.selected { border-color: var(--orange); background: #fff8f0; }
+.check-box { width: 20px; height: 20px; border-radius: 4px; border: 2px solid #ccc; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; margin-top: 2px; }
+.check-item.selected .check-box { background: var(--orange); border-color: var(--orange); }
+.check-label { font-size: 14px; color: var(--text); line-height: 1.5; flex: 1; }
+.check-label .pri { font-weight: 700; margin-right: 4px; }
+.check-label .pri.p0 { color: var(--orange); }
+.check-label .pri.p1 { color: var(--navy); }
+.check-label .pri.p2 { color: var(--text-light); }
+
+/* Text input */
+.text-input { width: 100%; margin-top: 14px; padding: 12px 16px; border: 2px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit; color: var(--text); background: #fafbfc; min-height: 80px; resize: vertical; transition: all .3s; }
+.text-input:focus { outline: none; border-color: var(--navy); background: #fff; box-shadow: 0 0 0 4px rgba(26,42,64,.08); }
+
+/* Result block */
+.result-block { background: #fafbfc; border-radius: var(--radius-sm); padding: 20px; margin: 16px 0; border: 2px solid var(--border); border-left: 4px solid var(--navy); }
+.result-block h2 { font-size: 18px; margin-bottom: 12px; color: var(--navy); }
+.result-block .body { font-size: 14px; line-height: 1.8; color: var(--text); }
+.result-block .body h3 { font-size: 15px; margin: 12px 0 6px; color: var(--navy); }
+.result-block .body ul,.result-block .body ol { margin: 6px 0 6px 18px; }
+.result-block .body code { background: #2c3e50; color: #ecf0f1; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+.result-block .body pre { background: #2c3e50; color: #ecf0f1; padding: 12px 14px; border-radius: 10px; overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 8px 0; }
+.result-block .body pre code { background: none; padding: 0; }
+.result-block .body table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13px; }
+.result-block .body th, .result-block .body td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; }
+.result-block .body th { background: #eaf0f9; font-weight: 700; color: var(--navy); }
+.result-block .body tr:nth-child(even) { background: #fafbfc; }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 24px; border-radius: 50px; font-size: 14px; font-weight: 600; border: none; cursor: pointer; transition: all .3s; font-family: inherit; }
+.btn-primary { background: linear-gradient(135deg, var(--navy), var(--navy-light)); color: #fff; box-shadow: 0 4px 14px rgba(26,42,64,.25); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(26,42,64,.35); }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.btn-ai { background: linear-gradient(135deg, var(--orange), var(--orange-dark)); color: #fff; box-shadow: 0 4px 14px rgba(230,126,34,.3); }
+.btn-ai:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(230,126,34,.4); }
+.btn-copy { background: linear-gradient(135deg, var(--green), var(--green-dark)); color: #fff; }
+.btn-outline { background: #fff; color: var(--navy); border: 2px solid var(--navy); }
+.btn-outline:hover { background: #f0f4fa; }
+.btn-small { padding: 6px 14px; font-size: 12px; }
+.btn-group { display: flex; gap: 10px; margin-top: 18px; justify-content: center; flex-wrap: wrap; }
+
+.loading { text-align: center; padding: 30px; color: var(--text-light); }
+.loading .spinner { font-size: 32px; animation: spin 1s linear infinite; display: inline-block; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* Toast */
+.toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--navy); color: #fff; padding: 10px 24px; border-radius: 50px; font-size: 13px; font-weight: 600; z-index: 999; animation: toastIn .3s ease, toastOut .3s ease 1.5s forwards; pointer-events: none; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-16px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+@keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
+
+/* Wiring table */
+.wire-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13px; font-family: "SF Mono", "Menlo", "Consolas", monospace; }
+.wire-table th { background: var(--navy); color: #fff; padding: 8px 12px; text-align: left; font-size: 12px; }
+.wire-table td { padding: 8px 12px; border: 1px solid var(--border); }
+.wire-table tr:nth-child(even) td { background: #fafbfc; }
+
+/* Circuit decoration */
+.circuit-line { position: absolute; pointer-events: none; opacity: .15; }
+.header { position: relative; overflow: hidden; }
+
+/* Eval block */
+.eval-block { background: linear-gradient(135deg, #fff8f0, #fff); border: 2px solid var(--orange-light); border-radius: var(--radius-sm); padding: 24px; margin: 16px 0; text-align: center; }
+.eval-block .score { font-size: 48px; font-weight: 800; color: var(--orange); }
+.eval-block .stars { font-size: 28px; margin: 4px 0; }
+
+.footer { text-align: center; padding: 20px; color: var(--text-light); font-size: 12px; }
+.footer span { color: var(--navy); font-weight: 600; }
+
+/* Industry tag */
+.industry-tag { display: inline-block; background: var(--navy); color: #fff; padding: 3px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; margin-bottom: 12px; letter-spacing: 1px; }
+
+/* Design dimension card */
+.design-dim-card { transition: all .3s; }
+.design-dim-card:hover { border-color: var(--orange) !important; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(230,126,34,.12); }
+.design-dim-card.improved { background: #f0fff4 !important; }
+
+@media (max-width: 640px) {
+  .main { padding: 20px 16px; }
+  .header h1 { font-size: 22px; }
+  .cat-grid { grid-template-columns: repeat(auto-fill, minmax(114px,1fr)); gap: 8px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <span class="icon" id="brainIcon" style="cursor:pointer;" title="测试后门：点击跳过当前检查">🔧</span>
+    <h1>设计思维<span>·</span>硬件工坊</h1>
+    <p class="sub">从想法到实物 —— 小P带你用 <a>ESP32-S3</a> 创造自己的智能作品</p>
+    <p style="margin-top:8px;">
+      <a href="design-thinking-intro.html" target="_blank" style="display:inline-block;background:var(--navy);color:#fff;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none;transition:all .3s;">🧠 什么是设计思维？</a>
+    </p>
+  </div>
+
+  <div class="phase-bar" id="phaseBar"></div>
+  <div class="main" id="mainContent"></div>
+  <div class="footer">设计思维工坊 · <span>ESP32-S3</span> 智能硬件创作</div>
+</div>
+
+<script>
+// ═══ API Configuration ═══
+const API_URL = 'https://api.deepseek.com/chat/completions';
+const MODEL_FLASH = 'deepseek-v4-flash';
+const MODEL_PRO = 'deepseek-v4-pro';
+const LS_KEY = 'hw_design_thinking_ds_key';
+function getApiKey() { return localStorage.getItem(LS_KEY) || 'sk-f0527cfcf9c14c54892818cc37dc45bd'; }
+function setApiKey(k) { localStorage.setItem(LS_KEY, k); }
+function hasApiKey() { const k = getApiKey(); return k && k.startsWith('sk-'); }
+
+async function callAI(prompt, model) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getApiKey()}` },
+    body: JSON.stringify({ model: model || MODEL_FLASH, messages: [{ role: 'user', content: prompt }], stream: false, temperature: 0.7 })
+  });
+  if (!res.ok) throw new Error('API 错误: ' + res.status);
+  const data = await res.json();
+  const content = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+  if (!content) throw new Error('AI 没有返回内容');
+  return content;
+}
+
+// ═══ Hardware Inventory (ESP32-S3 available modules) ═══
+const HW = {
+  mainboard: {
+    name: 'ESP32-S3 核心板 + 扩展板',
+    chips: 'ESP32-S3 N16R8',
+    features: 'WiFi + 蓝牙 + AI语音 + Type-C供电',
+    pins: { power: '3.3V / 5V / GND', gpio: '多路GPIO', i2c: 'I2C总线', uart: '串口' }
+  },
+  sensors: [
+    { id:'dht11', name:'温湿度传感器', kid:'温度湿度小探头', pins:'VCC→3.3V, GND→GND, DATA→任意GPIO', use:'感知环境的温度和湿度', icon:'🌡️' },
+    { id:'ultrasonic', name:'超声波测距模块', kid:'测距小雷达', pins:'VCC→5V, GND→GND, TRIG→GPIO, ECHO→GPIO', use:'测量前方物体距离', icon:'📏' },
+    { id:'light', name:'光敏传感器', kid:'光线小眼睛', pins:'VCC→3.3V, GND→GND, DO→任意GPIO', use:'检测环境光线亮度', icon:'☀️' },
+    { id:'sound', name:'声音传感器', kid:'声音小耳朵', pins:'VCC→3.3V, GND→GND, DO→任意GPIO', use:'检测声音大小/拍手触发', icon:'👂' },
+    { id:'inmp441', name:'全向麦克风模块', kid:'AI语音耳朵', pins:'VCC→3.3V, GND→GND, SD→GPIO, SCK→GPIO, WS→GPIO', use:'录制语音、和AI对话', icon:'🎤' },
+    { id:'tof', name:'激光测距模块', kid:'激光小尺子', pins:'VCC→3.3V, GND→GND, SCL→GPIO, SDA→GPIO', use:'精确测量距离', icon:'📐' },
+    { id:'ir', name:'红外遥控套件', kid:'遥控小帮手', pins:'VCC→3.3V, GND→GND, DATA→任意GPIO', use:'用遥控器控制设备', icon:'📺' },
+  ],
+  actuators: [
+    { id:'led', name:'LED交通灯模块', kid:'彩色小灯', pins:'R→GPIO, Y→GPIO, G→GPIO, GND→GND', use:'显示红黄绿三种颜色', icon:'🚦' },
+    { id:'ws2812', name:'WS2812 RGB灯带', kid:'彩虹灯带', pins:'VCC→5V, GND→GND, DIN→任意GPIO', use:'显示多种颜色和动画效果', icon:'🌈' },
+    { id:'servo', name:'SG90舵机', kid:'小马达手臂', pins:'VCC→5V, GND→GND, SIGNAL→任意GPIO', use:'转动角度，像小手臂一样', icon:'🦾' },
+    { id:'buzzer', name:'无源蜂鸣器', kid:'小喇叭', pins:'VCC→3.3V, GND→GND, I/O→任意GPIO', use:'播放音乐和音效', icon:'🔔' },
+    { id:'speaker', name:'功放模块+喇叭', kid:'大喇叭', pins:'VCC→5V, GND→GND, IN→任意GPIO/DAC', use:'播放高质量声音和语音', icon:'🔊' },
+    { id:'mos', name:'四路MOS管模块', kid:'大功率开关', pins:'VCC→5V, GND→GND, SIG1~4→GPIO', use:'控制大功率设备开关', icon:'⚡' },
+    { id:'relay_btn', name:'大按键模块', kid:'大按钮', pins:'VCC→3.3V, GND→GND, SIG→任意GPIO', use:'按下触发动作', icon:'🔘' },
+    { id:'encoder', name:'EC11编码器', kid:'旋钮调节器', pins:'VCC→3.3V, GND→GND, CLK→GPIO, DT→GPIO, SW→GPIO', use:'旋转调节音量、亮度等', icon:'🎛️' },
+  ],
+  displays: [
+    { id:'oled13', name:'1.3寸OLED屏', kid:'小屏幕', pins:'VCC→3.3V, GND→GND, SCL→GPIO, SDA→GPIO', use:'显示文字、小图标、表情', icon:'📟' },
+    { id:'tft24', name:'2.4寸TFT彩屏', kid:'彩色大屏', pins:'VCC→3.3V, GND→GND, 多通道SPI', use:'显示彩色图片和界面', icon:'🖥️' },
+    { id:'tm1637', name:'4位数码管', kid:'数字显示器', pins:'VCC→3.3V, GND→GND, CLK→GPIO, DIO→GPIO', use:'显示数字、时间、分数', icon:'🔢' },
+    { id:'max7219', name:'MAX7219点阵屏', kid:'像素画屏幕', pins:'VCC→5V, GND→GND, DIN→GPIO, CS→GPIO, CLK→GPIO', use:'显示图案、动画、文字', icon:'🟩' },
+    { id:'lcd1602', name:'LCD1602液晶屏', kid:'信息显示屏', pins:'VCC→5V, GND→GND, SDA→GPIO, SCL→GPIO', use:'显示两行文字信息', icon:'📺' },
+  ],
+  power: [
+    { id:'dc_conv', name:'DC转换模块', kid:'电压转换器', pins:'输入12V, 输出3.3V/5V/12V可选', use:'把电池电压变成设备需要的电压', icon:'🔋' },
+    { id:'psu_adj', name:'可调电源适配器', kid:'万能电源', pins:'输出电压3V-12V可调', use:'给各种设备供电', icon:'🔌' },
+    { id:'battery9v', name:'9V电池+扣子', kid:'便携电池', pins:'9V输出', use:'不插电也能玩!', icon:'🔋' },
+    { id:'lm2596', name:'LM2596稳压模块', kid:'电压稳定器', pins:'输入→输出(可调)', use:'稳定电压，保护电路', icon:'⚙️' },
+  ],
+  other: [
+    { id:'ds3231', name:'DS3231时钟模块', kid:'电子手表', pins:'VCC→3.3V, GND→GND, SCL→GPIO, SDA→GPIO', use:'准确计时、定时提醒', icon:'🕐' },
+    { id:'breadboard', name:'迷你面包板', kid:'积木底板', pins:'无需焊接，直接插线', use:'搭建电路，像搭积木一样', icon:'🧱' },
+    { id:'dupont', name:'杜邦线套装', kid:'彩色连接线', pins:'公对公、公对母、母对母', use:'连接各个模块', icon:'🔗' },
+  ]
+};
+
+// ═══ Scenarios ═══
+const SCENARIOS = [
+  { id:'smart_home', icon:'🏠', name:'智能小管家', desc:'语音控制家电，让家更聪明' },
+  { id:'fun_toy', icon:'🎮', name:'趣味互动玩具', desc:'LED灯光、音效、游戏装置' },
+  { id:'eco_guard', icon:'🌿', name:'环保小卫士', desc:'监测环境，守护绿色地球' },
+  { id:'campus_help', icon:'📚', name:'校园小帮手', desc:'课堂计时、提醒、测量工具' },
+  { id:'health_station', icon:'❤️', name:'健康小站', desc:'温湿度提醒、定时休息、运动' },
+  { id:'safety_guard', icon:'🛡️', name:'安全小卫士', desc:'距离警报、入侵检测、求救' },
+];
+
+// ═══ Age groups ═══
+const AGE_GROUPS = [
+  { id:'p34', label:'小学 3-4 年级', age:'9-10岁', desc:'喜欢动手和直观的反馈' },
+  { id:'p56', label:'小学 5-6 年级', age:'11-12岁', desc:'能理解简单电路和程序逻辑' },
+  { id:'m12', label:'初中 1-2 年级', age:'13-14岁', desc:'能思考复杂的交互设计' },
+  { id:'h', label:'高中及以上', age:'15岁+', desc:'具备较成熟的系统思维' },
+];
+
+// ═══ Phases ═══
+const PHASES = ['走近用户', '发现真问题', '调研出方案', '脑洞大开', '多维评价', '我的作品方案'];
+
+// ═══ DESIGN Dimensions (hardware adapted) ═══
+const DESIGN_DIMS = [
+  { id:'desirability', name:'需求度', icon:'🎯', desc:'目标用户真的需要这个智能硬件吗？' },
+  { id:'effectiveness', name:'有效性', icon:'💪', desc:'这个方案能有效解决问题吗？' },
+  { id:'simplicity', name:'简洁性', icon:'✨', desc:'方案够简单直接吗？有没有多余的硬件？' },
+  { id:'innovation', name:'创新性', icon:'💡', desc:'有新意吗？和现有方案有什么不同？' },
+  { id:'feasibility', name:'可行性', icon:'🛠️', desc:'用现有 ESP32-S3 模块能真正做出来吗？' },
+  { id:'aesthetics', name:'体验感', icon:'🎨', desc:'用起来有趣、好看、顺手吗？' },
+];
+
+// ═══ State ═══
+const STATE = {
+  phase: 0,
+  ageGroup: null,
+  scenario: null,
+  questions: [],
+  questionIdx: 0,
+  userAnswers: [],
+  coreProblem: '',
+  researchNotes: '',
+  researchEval: null,
+  selectedFeatures: [],
+  designScores: null,
+  designOverall: '',
+  _improvedDims: new Set(),
+  hardwareSolution: null,
+  allContext: {},
+};
+
+// ═══ DOM helpers ═══
+const main = document.getElementById('mainContent');
+
+function buildPhaseBar() {
+  document.getElementById('phaseBar').innerHTML = PHASES.map((name, i) => {
+    let cls = '';
+    if (i < STATE.phase) cls = 'done'; else if (i === STATE.phase) cls = 'active';
+    return `<div class="phase-step ${cls}">
+      <div class="phase-dot-wrap"><div class="phase-dot-fill"></div></div>
+      <span class="phase-label">${name}</span>
+    </div>`;
+  }).join('');
+}
+
+function showToast(msg) {
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 1900);
+}
+
+function btn(text, cls, onclick, disabled) {
+  return `<button class="btn ${cls}" onclick="${onclick}" ${disabled ? 'disabled' : ''}>${text}</button>`;
+}
+
+// ═══ Age Selection ═══
+function renderAgeSelect() {
+  buildPhaseBar();
+  main.innerHTML = `
+    <div class="msg msg-ai">
+      <div class="avatar">👋</div>
+      <div class="bubble">
+        <strong>你好呀！开始之前，先告诉我你读几年级？</strong><br>
+        这样小P才能给你出合适难度的思考题，不让太难也不让太简单～
+      </div>
+    </div>
+    <div class="choice-list">${AGE_GROUPS.map(g => `
+      <div class="choice-card" onclick="selectAgeGroup('${g.id}')">
+        <div class="choice-dot"></div>
+        <div class="choice-text">
+          <strong>${g.label}</strong>
+          <span style="color:var(--text-light);font-size:12px;display:block;">${g.age}</span>
+        </div>
+      </div>
+    `).join('')}</div>
+  `;
+}
+
+function selectAgeGroup(id) {
+  STATE.ageGroup = AGE_GROUPS.find(g => g.id === id);
+  STATE.allContext.ageGroup = STATE.ageGroup.label;
+  renderPhase0();
+}
+
+// ═══ Phase 0: Scenario Selection ═══
+function renderPhase0() {
+  buildPhaseBar();
+  main.innerHTML = `
+    <div class="msg msg-ai">
+      <div class="avatar">🤖</div>
+      <div class="bubble">
+        <strong>第一步：你想做一个什么样的智能硬件？</strong><br>
+        下面是<strong>6 个方向</strong>，选 <strong>1 个</strong>你最有兴趣的。<br>
+        你的作品会用 ESP32-S3 + 传感器 + AI 语音 来实现哦！
+      </div>
+    </div>
+    <div style="text-align:center;margin-bottom:12px;">
+      <span style="display:inline-block;background:#eaf0f9;color:var(--navy);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">当前年级：${STATE.ageGroup?.label || '未选择'}</span>
+      <a href="javascript:void(0)" onclick="renderAgeSelect()" style="font-size:12px;color:var(--orange);margin-left:8px;">修改</a>
+    </div>
+    <div class="cat-grid">${SCENARIOS.map(s => `
+      <div class="cat-card${STATE.scenario?.id === s.id ? ' selected' : ''}" onclick="selectScenario('${s.id}')" data-id="${s.id}">
+        <span class="ci">${s.icon}</span>
+        <span class="cn">${s.name}</span>
+        <span class="cd">${s.desc}</span>
+      </div>
+    `).join('')}</div>
+    <div class="btn-group">
+      ${btn('✨ 选好了，开始思考！', 'btn-primary', 'confirmPhase0()', !STATE.scenario)}
+    </div>
+  `;
+}
+
+function selectScenario(id) {
+  STATE.scenario = SCENARIOS.find(s => s.id === id);
+  renderPhase0();
+}
+
+function confirmPhase0() {
+  if (!STATE.scenario) { showToast('请选一个方向'); return; }
+  STATE.allContext.scenario = STATE.scenario.name;
+  STATE.allContext.scenarioDesc = STATE.scenario.desc;
+  STATE.phase = 1;
+  renderPhase1Start();
+}
+
+// ═══ Phase 1: AI generates questions ═══
+async function renderPhase1Start() {
+  buildPhaseBar();
+  if (!hasApiKey()) {
+    main.innerHTML = `<div class="msg msg-ai"><div class="avatar">🤖</div><div class="bubble">接下来的步骤需要 AI 辅助。请先配置 API Key。<br>${btn('🔑 配置 API Key', 'btn-ai', 'showApiModal()')}</div></div>`;
+    return;
+  }
+  main.innerHTML = `<div class="loading"><span class="spinner">⚙️</span><p>小P 正根据你选的「${STATE.allContext.scenario}」方向来出题……</p></div>`;
+
+  try {
+    const prompt = `你是一位面向${STATE.ageGroup?.label || '中小学生'}的硬件创作引导老师。学生要用ESP32-S3开发板制作一个AI语音助手硬件作品。
+
+学生的创作方向：${STATE.allContext.scenario}（${STATE.allContext.scenarioDesc}）
+
+这个作品是真实可触碰的硬件装置，含有传感器、执行器、显示屏等电子模块，能用语音对话和AI控制。
+
+请生成第 1 道引导式选择题，帮学生缩小范围——在他选的方向中，更具体地想做一个什么样的智能硬件？
+
+要求：
+- 给 3 个选项（用A/B/C标记）
+- 每个选项都必须是能用ESP32-S3+传感器+执行器实现的硬件作品
+- 可选用的模块包括但不限于：温湿度传感器、超声波、光敏、声音传感器、LED灯、RGB灯带、舵机、蜂鸣器、喇叭、OLED屏、TFT彩屏、数码管、点阵屏
+- 选项要有趣、有画面感，能激发${STATE.ageGroup?.label || '学生'}的创作欲
+- 每个选项是互斥的（只能选一个）
+- 题目和选项里不要出现 Markdown 加粗符号（如 **），保持纯文本
+
+格式严格如下：
+题1：题目标题
+A：选项描述
+B：选项描述
+C：选项描述`;
+
+    const result = await callAI(prompt);
+    const qs = parseQuestions(result);
+    STATE.questions = qs.slice(0, 1);
+    STATE.userAnswers = [];
+    STATE.questionIdx = 0;
+    renderQuestion();
+  } catch (e) {
+    main.innerHTML = `<div class="msg msg-ai"><div class="avatar">😢</div><div class="bubble">生成思考题失败：${e.message}<br>${btn('🔄 重试', 'btn-outline', 'renderPhase1Start()')}</div></div>`;
+  }
+}
+
+function cleanTitle(title) {
+  return String(title || '').replace(/\*\*/g, '').replace(/\*/g, '').replace(/_/g, '').trim();
+}
+
+function parseQuestions(text) {
+  const qs = [];
+  const regex = /题\s*\d+\s*[：:]([\s\S]*?)(?=题\s*\d+\s*[：:]|$)/g;
+  let m;
+  while ((m = regex.exec(text)) !== null) {
+    const body = m[1].trim();
+    const lines = body.split('\n').filter(l => l.trim());
+    const title = cleanTitle(lines[0] || '');
+    const opts = [];
+    for (let i = 1; i < lines.length; i++) {
+      const om = lines[i].match(/^([A-C])[\.\、\s：:]*\s*(.+)/);
+      if (om) opts.push({ key: om[1], text: cleanTitle(om[2].trim()) });
+    }
+    if (title && opts.length > 0) qs.push({ title, opts });
+  }
+  if (qs.length === 0) {
+    const parts = text.split(/\n{2,}/).filter(p => p.trim());
+    parts.forEach(part => {
+      const lines = part.split('\n').filter(l => l.trim());
+      const title = cleanTitle(lines[0] || '请选择一个选项');
+      const opts = [];
+      for (let i = 1; i < lines.length; i++) {
+        const om = lines[i].match(/^([A-C])[\.\、\s：:]*\s*(.+)/);
+        if (om) opts.push({ key: om[1], text: cleanTitle(om[2].trim()) });
+      }
+      if (opts.length > 0) qs.push({ title, opts });
+    });
+  }
+  return qs.slice(0, 5);
+}
+
+function renderQuestion() {
+  const q = STATE.questions[STATE.questionIdx];
+  buildPhaseBar();
+  if (!q) return;
+  const isCustom = STATE._answerMode === 'custom';
+  main.innerHTML = `
+    <div class="msg msg-ai">
+      <div class="avatar">🤖</div>
+      <div class="bubble">
+        <strong>思考题 ${STATE.questionIdx + 1} / 4</strong><br>
+        ${q.title}
+      </div>
+    </div>
+    ${isCustom ? `
+      <div style="margin-top:10px;">
+        <textarea class="text-input" id="customAnswerInput" style="min-height:100px;" placeholder="用你自己的话写一个答案……"></textarea>
+        <div class="btn-group">
+          ${btn('✅ 提交答案', 'btn-primary', 'submitCustomAnswer()')}
+          ${btn('↩ 返回选项', 'btn-outline', 'cancelCustomAnswer()')}
+        </div>
+      </div>
+    ` : `
+      <div class="choice-list">${q.opts.map(o => `
+        <div class="choice-card" onclick="selectAnswer('${o.key}','${o.text.replace(/'/g,"\\'")}')">
+          <div class="choice-dot"></div>
+          <div class="choice-text"><strong>${o.key}.</strong> ${o.text}</div>
+        </div>
+      `).join('')}
+        <div class="choice-card" onclick="showCustomAnswer()" style="border-style:dashed;border-color:var(--orange);">
+          <div class="choice-dot" style="border-color:var(--orange);">✏️</div>
+          <div class="choice-text" style="color:var(--orange);">我自己写一个答案……</div>
+        </div>
+      </div>
+      <div class="btn-group" style="margin-top:12px;">
+        ${btn('🔄 换一批选项', 'btn-outline', 'regenerateOptions()')}
+        ${STATE.questionIdx > 0 ? btn('← 上一步', 'btn-outline', 'goPrevStep()') : ''}
+      </div>
+    `}
+  `;
+}
+
+function selectAnswer(key, text) {
+  STATE.userAnswers[STATE.questionIdx] = { key, text };
+  STATE.questionIdx++;
+  setTimeout(() => nextQuestionOrPhase2(), 300);
+}
+
+function nextQuestionOrPhase2() {
+  if (STATE.questionIdx >= 4) {
+    STATE.phase = 2;
+    STATE.allContext.answers = STATE.userAnswers.map((a, i) => `Q: ${STATE.questions[i].title}\nA: ${a.text}`).join('\n');
+    renderPhase2();
+  } else {
+    generateNextQuestion();
+  }
+}
+
+async function generateNextQuestion() {
+  const idx = STATE.questionIdx + 1;
+  main.innerHTML = `<div class="loading"><span class="spinner">⚙️</span><p>小P 正根据你刚才的回答出第 ${idx} 道题……</p></div>`;
+
+  const previousAnswers = STATE.userAnswers.map((a, i) => `第${i+1}题：${STATE.questions[i].title}\n学生的答案：${a.text}`).join('\n\n');
+
+  let topic = '', topicDesc = '';
+  if (idx === 2) { topic = '目标用户'; topicDesc = '这个智能硬件主要给谁用？（他的年龄、身份、什么情况下用）'; }
+  else if (idx === 3) { topic = '核心痛点'; topicDesc = '这个人遇到了什么问题？为什么需要这个硬件来帮忙？'; }
+  else if (idx === 4) { topic = '使用场景'; topicDesc = '用户会在哪里、什么时候用？希望这个硬件做什么？'; }
+
+  try {
+    const prompt = `你是一位面向${STATE.ageGroup?.label || '中小学生'}的硬件创作引导老师。学生要用ESP32-S3做智能硬件。
+
+创作方向：${STATE.allContext.scenario}（${STATE.allContext.scenarioDesc}）
+
+学生已经回答了前 ${STATE.questionIdx} 道题：
+${previousAnswers}
+
+请根据上面的回答，生成第 ${idx} 道引导式选择题：${topic}——${topicDesc}
+
+要求：
+- 题目必须与学生的之前选择相关联
+- 给 3 个选项（用A/B/C标记）
+- 选项要有趣、有画面感，贴近${STATE.ageGroup?.label || '学生'}的生活
+- 每个选项是互斥的
+- 提到的硬件模块要在ESP32-S3能力范围内（传感器、LED、屏幕、舵机、喇叭等）
+- 题目和选项里不要出现 Markdown 加粗符号（如 **），保持纯文本
+
+格式严格如下：
+题${idx}：题目标题
+A：选项描述
+B：选项描述
+C：选项描述`;
+
+    const result = await callAI(prompt);
+    const qs = parseQuestions(result);
+    if (qs.length > 0) {
+      STATE.questions.push(qs[0]);
+      renderQuestion();
+    } else {
+      STATE.questions.push({ title: `请思考：${topic}`, opts: [
+        { key: 'A', text: '选项 A' }, { key: 'B', text: '选项 B' }, { key: 'C', text: '选项 C' }
+      ]});
+      renderQuestion();
+    }
+  } catch (e) {
+    main.innerHTML = `<div class="msg msg-ai"><div class="avatar">😢</div><div class="bubble">生成下一题失败：${e.message}<br>${btn('🔄 重试', 'btn-outline', 'generateNextQuestion()')}</div></div>`;
+  }
+}
+
+function goPrevStep() {
+  if (STATE.questionIdx > 0) {
+    STATE.questionIdx--;
+    STATE.userAnswers.pop();
+    STATE.questions = STATE.questions.slice(0, STATE.questionIdx + 1);
+    delete STATE._answerMode;
+    renderQuestion();
+  }
+}
+
+async function regenerateOptions() {
+  const q = STATE.questions[STATE.questionIdx];
+  const idx = STATE.questionIdx + 1;
+  main.innerHTML = `<div class="loading"><span class="spinner">🔄</span><p>小P 正想一些新的选项……</p></div>`;
+  const previousAnswers = STATE.userAnswers.slice(0, STATE.questionIdx).map((a, i) => `第${i+1}题：${STATE.questions[i].title}\n学生的答案：${a.text}`).join('\n\n');
+
+  try {
+    const prompt = `学生读${STATE.ageGroup?.label || '中小学'}，用ESP32-S3做智能硬件，方向：${STATE.allContext.scenario}。
+${previousAnswers ? `之前回答：\n${previousAnswers}\n` : ''}
+现在第 ${idx} 题："${q.title}"，之前选项不够好。
+
+请重新生成 3 个完全不同的选项（A/B/C）。
+要求：选项要有趣、具体、贴近${STATE.ageGroup?.label || '学生'}生活，是ESP32-S3能实现的硬件作品。不要出现 Markdown 加粗符号（如 **）。
+
+格式：
+A：选项描述
+B：选项描述
+C：选项描述`;
+
+    const result = await callAI(prompt);
+    const lines = result.split('\n');
+    const newOpts = [];
+    for (const l of lines) {
+      const om = l.match(/^([A-C])[\.\、\s：:]*\s*(.+)/);
+      if (om) newOpts.push({ key: om[1], text: om[2].trim() });
+    }
+    if (newOpts.length >= 2) {
+      STATE.questions[STATE.questionIdx].opts = newOpts;
+      showToast('✅ 新选项来了！');
+    } else {
+      showToast('⚠️ 生成失败，请重试');
+    }
+    renderQuestion();
+  } catch (e) {
+    main.innerHTML = `<div class="msg msg-ai"><div class="avatar">😢</div><div class="bubble">换选项失败：${e.message}<br>${btn('↩ 返回', 'btn-outline', 'renderQuestion()')}</div></div>`;
+  }
+}
+
+function showCustomAnswer() { STATE._answerMode = 'custom'; renderQuestion(); }
+function cancelCustomAnswer() { delete STATE._answerMode; renderQuestion(); }
+function submitCustomAnswer() {
+  const input = document.getElementById('customAnswerInput');
+  const text = input.value.trim();
+  if (!text) { showToast('请输入你的答案'); return; }
+  STATE.userAnswers[STATE.questionIdx] = { key: '自定义', text };
+  STATE.questionIdx++;
+  delete STATE._answerMode;
+  setTimeout(() => nextQuestionOrPhase2(), 300);
+}
+
+// ═══ Phase 2: Problem Definition ═══
+async function renderPhase2() {
+  buildPhaseBar();
+  main.innerHTML = `<div class="loading"><span class="spinner">🔍</span><p>小P 正帮你梳理核心问题……</p></div>`;
+
+  try {
+    const prompt = `学生读${STATE.ageGroup?.label || '中小学'}，用ESP32-S3做智能硬件，方向：${STATE.allContext.scenario}。
+
+学生经过思考，回答了以下问题：
+${STATE.allContext.answers}
+
+请帮学生总结提炼出「核心问题确认」，并以选择题形式让学生确认。题目要让学生看清楚他想解决的问题到底是什么。
+
+给 3 个选项，让学生选出最准确的问题描述。
+
+同时，请给一个简单的评价，告诉学生他的思考好在哪里，哪里可以再想想。
+
+注意：题目和选项里不要出现 Markdown 加粗符号（如 **），保持纯文本。
+
+格式：
+得分：X/10
+评语：一句话
+核心问题：用一句简短的话概括
+核心问题选择题：你认为最核心要解决的是什么？
+A：描述
+B：描述
+C：描述`;
+
+    const result = await callAI(prompt);
+    const scoreM = result.match(/得分[：:]\s*(\d+)/);
+    const commentM = result.match(/评语[：:]\s*(.+)/);
+    const problemM = result.match(/核心问题[：:]\s*([\s\S]*?)(?=\n核心问题选择|$)/);
+    const optsM = result.match(/核心问题选择题[：:]?\s*([\s\S]*?)$/);
+    const score = scoreM ? parseInt(scoreM[1]) : 7;
+    const comment = commentM ? commentM[1].trim() : '不错的思考方向！';
+    const problemSummary = problemM ? problemM[1].replace('核心问题：', '').trim() : '';
+    
+    let coreOpts = [];
+    if (optsM && optsM[1]) {
+      const lines = optsM[1].split('\n');
+      for (const l of lines) {
+        const cm = l.match(/^([A-C])[\.\、\s：:]*\s*(.+)/);
+        if (cm) coreOpts.push({ key: cm[1], text: cleanTitle(cm[2].trim()) });
+      }
+    }
+
+    STATE._coreOpts = coreOpts;
+    STATE._problemScore = score;
+    STATE._problemComment = comment;
+    STATE._problemSummary = problemSummary;
+    renderProblemUI();
+  } catch (e) {
+    main.innerHTML = `<div class="msg msg-ai"><div class="avatar">😢</div><div class="bubble">分析失败：${e.message}<br>${btn('🔄 重试', 'btn-outline', 'renderPhase2()')}</div></div>`;
+  }
+}
+
+function renderProblemUI() {
+  buildPhaseBar();
+  const stars = '⭐'.repeat(Math.round(STATE._problemScore / 2)) + '☆'.repeat(5 - Math.round(STATE._problemScore / 2));
+  main.innerHTML = `
+    <div class="msg msg-ai">
+      <div class="avatar">🧠</div>
+      <div class="bubble">
+        <strong>你的思考得分</strong><br>
+        小P 看了你的回答，觉得你想得挺认真的！
+      </div>
+    </div>
+    <div class="eval-block">
+      <div class="score">${STATE._problemScore}<span style="font-size:20px;">/10</span></div>
+      <div class="stars">${stars}</div>
+      <p style="font-size:14px;margin-top:8px;color:var(--text);">${STATE._problemComment}</p>
+      ${STATE._problemSummary ? `<p style="margin-top:10px;padding:10px;background:#eaf0f9;border-radius:10px;font-size:14px;"><strong>🔍 你似乎想解决：</strong><br>${STATE._problemSummary}</p>` : ''}
+    </div>
+    ${STATE._coreOpts.length > 0 ? `
+      <h3 style="margin:16px 0 8px;">🎯 确认一下：你觉得最核心的问题是？</h3>
+      <div class="choice-list">${STATE._coreOpts.map(o => `
+        <div class="choice-card" onclick="selectCoreProblem('${o.key}','${o.text.replace(/'/g,"\\'")}', this)">
+          <div class="choice-dot"></div>
+          <div class="choice-text"><strong>${o.key}.</strong> ${o.text}</div>
+        </div>
+      `).join('')}
+        <div class="choice-card" onclick="showCoreCustom()" style="border-style:dashed;border-color:var(--orange);">
+          <div class="choice-dot" style="border-color:var(--orange);">✏️</div>
+          <div class="choice-text" style="color:var(--orange);">我觉得还有别的……</div>
+        </div>
+      </div>
+      <div class="btn-group">
+        ${btn('🔄 换一批问题描述', 'btn-outline', 'renderPhase2()')}
+        ${btn('✅ 确认，进入下一步', 'btn-primary', 'confirmCoreProblem()')}
+        ${btn('← 返回修改回答', 'btn-outline', 'backToPhase1()')}
+      </div>
+    ` : `
+      <div class="btn-group">
+        ${btn('🔄 重新分析', 'btn-outline', 'renderPhase2()')}
+        ${btn('✅ 继续下一步', 'btn-primary', 'skipProblemConfirm()')}
+        ${btn('← 返回修改回答', 'btn-outline', 'backToPhase1()')}
+      </div>
+    `}
+  `;
+}
+
+function selectCoreProblem(key, text, el) {
+  STATE._selectedCore = { key, text };
+  document.querySelectorAll('.choice-list .choice-card').forEach(c => c.classList.remove('selected'));
+  if (el) el.classList.add('selected');
+}
+
+function showCoreCustom() {
+  const d = document.createElement('div');
+  d.id = 'coreCustomWrap';
+  d.style.cssText = 'margin-top:10px;';
+  d.innerHTML = `<textarea class="text-input" id="coreCustomInput" style="min-height:80px;" placeholder="用你自己的话描述核心问题……"></textarea>`;
+  const btn = document.querySelector('.choice-card[style*="dashed"]');
+  if (btn) btn.insertAdjacentElement('afterend', d);
+}
+
+function confirmCoreProblem() {
+  if (STATE._selectedCore) {
+    STATE.coreProblem = STATE._selectedCore.text;
+  } else {
+    const customEl = document.getElementById('coreCustomInput');
+    if (customEl && customEl.value.trim()) {
+      STATE.coreProblem = customEl.value.trim();
+    } else {
+      STATE.coreProblem = STATE._problemSummary || '通过智能硬件解决生活中的实际问题';
+    }
+  }
+  STATE.allContext.coreProblem = STATE.coreProblem;
+  STATE.phase = 3;
+  renderResearchProposal();
+}
+
+function skipProblemConfirm() {
+  STATE.coreProblem = STATE._problemSummary || '通过智能硬件解决实际问题';
+  STATE.allContext.coreProblem = STATE.coreProblem;
+  STATE.phase = 3;
+  renderResearchProposal();
+}
+
+function backToPhase1() {
+  STATE.questionIdx = STATE.questions.length - 1;
+  STATE.userAnswers.pop();
+  STATE.phase = 1;
+  renderQuestion();
+}
+
+// ═══ Phase 3: Research & Proposal ═══
+async function renderResearchProposal() {
+  buildPhaseBar();
+  if (STATE.researchNotes && !STATE._forceReEval) {
+    renderResearchUI();
+    return;
+  }
+  main.innerHTML = `<div class="loading"><span class="spinner">🔍</span><p>小P 正在给你布置调研任务……</p></div>`;
+
+  try {
+    const prompt = `学生读${STATE.ageGroup?.label || '中小学'}，要用ESP32-S3做一个智能硬件作品。
+
+创作方向：${STATE.allContext.scenario}
+核心问题：${STATE.allContext.coreProblem}
+学生思考回答：
+${STATE.allContext.answers}
+
+请为这个小组设计一个调研任务，要求：
+1. 给出明确的方向：他们要调研什么？
+2. 给出 3 个具体的问题，让学生去查资料、问人、观察
+3. 让学生讨论后写出一个初步方案（方案里要说清楚：用户是谁、解决什么问题、可能用什么硬件）
+
+输出格式：
+调研方向：一句话
+调研问题：
+1. xxx
+2. xxx
+3. xxx
+初步方案要求：一句话说明
+
+注意：语言要简单，适合${STATE.ageGroup?.label || '学生'}理解。不要出现 Markdown 加粗符号（如 **）。`;
+
+    const result = await callAI(prompt);
+    STATE.researchTask = result;
+    renderResearchUI();
+  } catch (e) {
+    main.innerHTML = `<div class="msg msg-ai"><div class="avatar">😢</div><div class="bubble">生成调研任务失败：${e.message}<br>${btn('🔄 重试', 'btn-outline', 'renderResearchProposal()')}</div></div>`;
+  }
+}
+
+function renderResearchUI() {
+  buildPhaseBar();
+  main.innerHTML = `
+    <div class="msg msg-ai">
+      <div class="avatar">📚</div>
+      <div class="bubble">
+        <strong>📝 小组调研任务</strong><br>
+        和你的小伙伴讨论、查资料、做观察，然后把结果写在下面。
+      </div>
+    </div>
+    <div class="result-block" style="border-left-color:var(--navy);background:#fff;">
+      <div class="body">${marked.parse(STATE.researchTask || '请先点击“小P帮我出调研任务”按钮。')}</div>
+    </div>
+    <div style="margin-top:10px;">
+      <textarea class="text-input" id="researchInput" style="min-height:160px;" placeholder="把你们的小组调研结果和初步方案写在这里。至少写 3 条观察/想法，可以用“-”列出。
+
+例如：
+- 我们采访了3位同学，发现……
+- 我们查资料发现……
+- 我们的方案是：做一个……用……传感器检测……">
+${STATE.researchNotes || ''}</textarea>
+    </div>
+    <div class="btn-group" style="margin-top:14px;">
+      ${btn('🔄 重新生成调研任务', 'btn-outline', 'refreshResearchTask()')}
+      ${btn('📝 提交调研结果', 'btn-primary', 'submitResearch()')}
+      ${btn('← 返回修改核心问题', 'btn-outline', 'backToPhase2FromResearch()')}
+    </div>
+  `;
+}
+
+function refreshResearchTask() {
+  STATE.researchTask = null;
+  STATE.researchNotes = '';
+  STATE.researchEval = null;
+  renderResearchProposal();
+}
+
+function backToPhase2FromResearch() {
+  STATE.phase = 2;
+  renderProblemUI();
+}
+
+function submitResearch() {
+  const input = document.getElementById('researchInput');
+  const text = input.value.trim();
+  if (!text) { showToast('请先填写调研结果'); return; }
+  if (text.length < 30) { showToast('调研结果太少了，多写一点'); return; }
+  STATE.researchNotes = text;
+  STATE.allContext.research = text;
+  checkResearchQuality();
+}
+
+async function checkResearchQuality() {
+  buildPhaseBar();
+  const items = (STATE.researchNotes || '').split(/\n/).filter(l => l.trim().startsWith('-') || l.trim().startsWith('•') || l.trim().length > 10);
+  const hasThreeItems = items.length >= 3;
+
+  if (STATE.researchNotes.length < 30 || !hasThreeItems) {
+    renderResearchEval({
+      score: 2,
+      comment: hasThreeItems ? '调研资料太少了，请再写详细一些。' : '调研资料至少要写 3 条观察和想法哦。',
+      weakness: '',
+      advice: '请用 "-" 列出至少 3 条：你们观察到的现象、采访到的信息、查到的资料。',
+      passed: false
+    });
+    return;
+  }
+
+  main.innerHTML = `<div class="loading"><span class="spinner">🔍</span><p>小P 正在检查你们的调研质量……</p></div>`;
+
+  try {
+    const prompt = `请评价学生小组提交的调研结果和初步方案。10分制。
+
+学生年级：${STATE.ageGroup?.label || '中小学'}
+创作方向：${STATE.allContext.scenario}
+核心问题：${STATE.allContext.coreProblem}
+学生调研结果：
+${STATE.researchNotes}
+
+评判标准：
+- 调研是否具体（0-4分）：有没有真实观察、采访、查资料？
+- 与方向相关性（0-3分）：调研和核心问题是否相关？
+- 初步方案是否清晰（0-3分）：有没有说清用户、问题、可能用什么硬件？
+
+请按${STATE.ageGroup?.label || '学生'}水平评价，不要以大学生或专业研究者标准要求。
+
+输出格式：
+得分：X/10
+评语：一句话
+不足：如果低于7分，指出具体哪里不足
+建议：如果低于7分，给一个具体改进方向
+
+注意：不要出现 Markdown 加粗符号（如 **）。`;
+
+    const result = await callAI(prompt);
+    const scoreM = result.match(/得分[：:]\s*(\d+)/);
+    const commentM = result.match(/评语[：:]\s*(.+)/);
+    const weaknessM = result.match(/不足[：:]\s*([\s\S]*?)(?=建议|$)/);
+    const adviceM = result.match(/建议[：:]\s*(.+)/);
+    const score = scoreM ? parseInt(scoreM[1]) : 5;
+    renderResearchEval({
+      score,
+      comment: commentM ? cleanTitle(commentM[1].trim()) : '继续加油！',
+      weakness: weaknessM ? cleanTitle(weaknessM[1].trim()) : '',
+      advice: adviceM ? cleanTitle(adviceM[1].trim()) : '尝试补充更多具体调研信息。',
+      passed: score >= 5
+    });
+  } catch (e) {
+    renderResearchEval({ score: 5, comment: '小P 检查失败，默认通过。', weakness: '', advice: '', passed: true });
+  }
+}
+
+function renderResearchEval(evalData) {
+  buildPhaseBar();
+  const passed = evalData.passed;
+  const stars = '⭐'.repeat(Math.round(evalData.score / 2)) + '☆'.repeat(5 - Math.round(evalData.score / 2));
+  STATE.researchEval = evalData;
+
+  main.innerHTML = `
+    <div class="msg msg-ai">
+      <div class="avatar">${passed ? '✅' : '⚠️'}</div>
+      <div class="bubble">
+        <strong>调研质量检查</strong><br>
+        小P 看了你们的调研结果，给了以下评价：
+      </div>
+    </div>
+    <div class="eval-block" style="border:2px solid ${passed ? 'var(--green)' : 'var(--orange)'};">
+      <div class="score" style="color:${passed ? 'var(--green)' : 'var(--orange)'}">${evalData.score}<span style="font-size:20px;">/10</span></div>
+      <div class="stars">${stars}</div>
+      <p style="font-size:14px;margin-top:8px;">${evalData.comment}</p>
+      ${evalData.weakness ? `<p style="margin-top:10px;padding:10px;background:#fff8f0;border-radius:10px;font-size:13px;"><strong>📌 不足：</strong>${evalData.weakness}</p>` : ''}
+      ${evalData.advice ? `<p style="margin-top:8px;padding:10px;background:#eaf0f9;border-radius:10px;font-size:13px;"><strong>💡 建议：</strong>${evalData.advice}</p>` : ''}
+    </div>
+    <div class="btn-group">
+      ${!passed ? `
+        ${btn('🔙 回去补充调研', 'btn-primary', 'backToResearchFromEval()')}
+      ` : `
+        ${btn('✅ 调研通过，继续想功能！', 'btn-primary', 'skipResearchEval()')}
+        ${btn('🔙 还想再完善调研', 'btn-outline', 'backToResearchFromEval()')}
+      `}
+    </div>
+  `;
+}
+
+function backToResearchFromEval() { STATE.phase = 3; renderResearchUI(); }
+function skipResearchEval() { STATE.phase = 4; renderPhase4(); }
+
+// ═══ Phase 4: Feature Brainstorming ═══
+async function renderPhase4() {
+  buildPhaseBar();
+  main.innerHTML = `<div class="loading"><span class="spinner">💡</span><p>小P 正根据你的想法构思功能……</p></div>`;
+
+  try {
+    // Build hardware reference
+    const hwList = [
+      ...HW.sensors.map(s => `- ${s.kid}（${s.name}）：${s.use}，引脚：${s.pins}`),
+      ...HW.actuators.map(a => `- ${a.kid}（${a.name}）：${a.use}，引脚：${a.pins}`),
+      ...HW.displays.map(d => `- ${d.kid}（${d.name}）：${d.use}，引脚：${d.pins}`),
+      ...HW.other.map(o => `- ${o.kid}（${o.name}）：${o.use}，引脚：${o.pins}`),
+    ].join('\n');
+
+    const prompt = `学生读${STATE.ageGroup?.label || '中小学'}，用ESP32-S3做AI语音助手硬件作品。
+
+创作方向：${STATE.allContext.scenario}
+学生思考回答：
+${STATE.allContext.answers}
+核心问题：${STATE.allContext.coreProblem}
+
+可用的硬件模块列表（从下面选，不要编造不存在的硬件）：
+${hwList}
+
+请根据学生的方向和问题，生成功能选择题。要求：
+
+1. 【功能选择题】给出 5-7 个功能建议（标注 P0/P1/P2 优先级），让学生勾选。
+   - P0 是必须有（最多3个），P1 是选了更好，P2 是锦上添花
+   - 每个功能后面用括号标注推荐的硬件模块
+   - 至少包含一个"AI语音对话"相关功能（因为ESP32-S3套件自带语音功能）
+   - 所有功能必须是上面列出的硬件能实现的
+   - 不要出现 Markdown 加粗符号（如 **），保持纯文本
+
+2. 【额外创意】给 2 个有趣的小点子，让学生考虑是否加入
+
+格式严格如下（不要加粗、不要改标签）：
+
+[功能选择题]
+[P0] 功能名：一句话描述（推荐硬件：xxx）
+[P1] 功能名：一句话描述（推荐硬件：xxx）
+...
+
+[额外创意]
+- 创意1：描述
+- 创意2：描述`;
+
+    const result = await callAI(prompt);
+    STATE._featureData = parseFeatureData(result);
+    renderFeatureUI();
+  } catch (e) {
+    main.innerHTML = `<div class="msg msg-ai"><div class="avatar">😢</div><div class="bubble">生成失败：${e.message}<br>${btn('🔄 重试', 'btn-outline', 'renderPhase4()')}</div></div>`;
+  }
+}
+
+function parseFeatureData(text) {
+  const featM = (text || '').match(/\[功能选择题\]([\s\S]*?)(?=\[额外|$)/i);
+  const extraM = (text || '').match(/\[额外创意\]([\s\S]*?)$/i);
+  const features = [];
+  if (featM && featM[1]) {
+    const lines = featM[1].split('\n');
+    for (const l of lines) {
+      const fm = l.match(/^\s*\[(P\d)\]\s*(.+)$/i);
+      if (fm) features.push({ priority: fm[1], text: cleanTitle(fm[2].trim()) });
+    }
+  }
+  const extras = [];
+  if (extraM && extraM[1]) {
+    const lines = extraM[1].split('\n');
+    for (const l of lines) {
+      const em = l.match(/^[-•]\s*(.+)/);
+      if (em) extras.push(cleanTitle(em[1].trim()));
+    }
+  }
+  if (features.length === 0) {
+    features.push({ priority: 'P0', text: 'AI语音对话（推荐硬件：INMP441麦克风 + ESP32-S3扬声器）' });
+  }
+  return { features, extras };
+}
+
+function renderFeatureUI() {
+  buildPhaseBar();
+  const fd = STATE._featureData;
+  window._featData = fd.features;
+  window._selFeat = new Set();
+
+  main.innerHTML = `
+    <div class="msg msg-ai">
+      <div class="avatar">💡</div>
+      <div class="bubble">
+        <strong>脑洞大开！来看看你可以加哪些功能</strong><br>
+        下面是根据你的想法生成的功能建议。勾选你想要的功能，也可以自己加。
+          </div>
+    </div>
+    <div style="margin:6px 0;padding:8px 14px;background:#eaf0f9;border-radius:10px;font-size:13px;">
+      <strong>🎯 你的核心问题：</strong>${STATE.coreProblem}
+    </div>
+    <h3 style="margin:16px 0 10px;display:flex;align-items:center;gap:8px;"><span style="background:var(--navy);color:#fff;width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;">🔧</span> 功能选择（可多选）</h3>
+    <div class="check-list">${fd.features.map((f, i) => `
+      <div class="check-item" onclick="toggleFeat(${i}, this)">
+        <div class="check-box"></div>
+        <div class="check-label"><span class="pri ${f.priority.toLowerCase()}">[${f.priority}]</span> ${f.text}</div>
+      </div>
+    `).join('')}</div>
+    ${fd.extras.length > 0 ? `
+      <div style="margin-top:12px;padding:12px;background:#fff8f0;border:1px dashed var(--orange-light);border-radius:12px;">
+        <strong style="color:var(--orange);">🌟 额外创意：</strong>
+        ${fd.extras.map(e => `<p style="margin:4px 0;font-size:13px;">• ${e}</p>`).join('')}
+      </div>
+    ` : ''}
+    <div style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px;align-items:center;">
+      ${btn('+ 自己添加', 'btn-outline btn-small', 'addCustomFeature()', false)}
+      ${btn('🔄 重新生成', 'btn-outline btn-small', 'renderPhase4()', false)}
+    </div>
+    <div id="customFeatures"></div>
+    <div class="btn-group">
+      ${btn('← 返回修改调研方案', 'btn-outline', 'backToPhase3FromFeatures()')}
+      ${btn('🚀 确认，生成作品方案！', 'btn-primary', 'confirmFeatures()')}
+    </div>
+  `;
+}
+
+function backToPhase3FromFeatures() { STATE.phase = 3; renderResearchUI(); }
+
+function toggleFeat(i, el) {
+  if (window._selFeat.has(i)) { window._selFeat.delete(i); el.classList.remove('selected'); }
+  else { window._selFeat.add(i); el.classList.add('selected'); }
+}
+
+function addCustomFeature() {
+  const d = document.createElement('div');
+  d.style.cssText = 'margin-top:8px;display:flex;gap:8px;';
+  d.innerHTML = `<input type="text" class="text-input" style="min-height:auto;flex:1;margin-top:0;" placeholder="自定义功能名称"><select style="padding:8px;border-radius:8px;border:2px solid var(--border);font-family:inherit;"><option>P0</option><option selected>P1</option><option>P2</option></select><button class="btn btn-outline btn-small" onclick="this.parentElement.remove()">✕</button>`;
+  document.getElementById('customFeatures').appendChild(d);
+}
+
+function confirmFeatures() {
+  const customInputs = document.querySelectorAll('#customFeatures input[type="text"]');
+  const customSel = document.querySelectorAll('#customFeatures select');
+  const customFeats = [];
+  for (let i = 0; i < customInputs.length; i++) {
+    if (customInputs[i].value.trim()) {
+      customFeats.push({ priority: customSel[i]?.value || 'P1', text: customInputs[i].value.trim() });
+    }
+  }
+  const selFeats = [];
+  window._selFeat.forEach(i => selFeats.push(window._featData[i]));
+  const allFeats = [...selFeats, ...customFeats];
+  if (allFeats.length === 0) { showToast('请至少选一个功能'); return; }
+  STATE.selectedFeatures = allFeats;
+  STATE.allContext.features = allFeats.map(f => `[${f.priority}] ${f.text}`).join('\n');
+  STATE.phase = 5;
+  renderDesignEval();
+}
+
+// ═══ Phase 5: DESIGN Multi-Dimension Evaluation ═══
+async function renderDesignEval() {
+  buildPhaseBar();
+  if (!STATE.designScores) {
+    evaluateDesign();
+    return;
+  }
+  const scores = STATE.designScores;
+  const dimsHtml = DESIGN_DIMS.map(dim => {
+    const s = scores[dim.id];
+    const stars = '⭐'.repeat(s.stars) + '☆'.repeat(5 - s.stars);
+    const improved = STATE._improvedDims.has(dim.id);
+    return `
+      <div class="design-dim-card ${improved ? 'improved' : ''}" onclick="improveDimension('${dim.id}')" style="background:#fafbfc;border:2px solid ${improved ? 'var(--green)' : 'var(--border)'};border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer;transition:all .3s;display:flex;align-items:flex-start;gap:12px;">
+        <div style="font-size:28px;flex-shrink:0;">${dim.icon}</div>
+        <div style="flex:1;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <strong style="font-size:14px;color:var(--navy);">${dim.name} ${improved ? '✨已提升' : ''}</strong>
+            <span style="font-size:14px;">${stars}</span>
+          </div>
+          <p style="font-size:12px;color:var(--text-light);margin:4px 0;">${s.comment}</p>
+          <p style="font-size:11px;color:#999;margin:0;">${dim.desc}</p>
+        </div>
+        <div style="font-size:18px;flex-shrink:0;color:var(--orange);align-self:center;">›</div>
+      </div>
+    `;
+  }).join('');
+
+  const totalStars = DESIGN_DIMS.reduce((sum, d) => sum + scores[d.id].stars, 0);
+  const avgStars = Math.round(totalStars / 6);
+
+  main.innerHTML = `
+    <div class="msg msg-ai">
+      <div class="avatar">📊</div>
+      <div class="bubble">
+        <strong>作品想法评价报告</strong><br>
+        小P 从 6 个维度给你选了的功能打了分。<br>
+        <span style="color:var(--text-light);font-size:12px;">点击任意维度可以深度提升它！</span>
+      </div>
+    </div>
+    <div style="text-align:center;margin:12px 0;padding:16px;background:linear-gradient(135deg,#fff8f0,#fff);border-radius:16px;border:2px solid var(--orange-light);">
+      <div style="font-size:14px;color:var(--text-light);">综合评分</div>
+      <div style="font-size:36px;font-weight:800;color:var(--navy);">${avgStars}<span style="font-size:18px;">/5</span></div>
+      <div style="font-size:22px;">${'⭐'.repeat(avgStars)}${'☆'.repeat(5 - avgStars)}</div>
+      <p style="font-size:13px;color:var(--text-light);margin-top:4px;">${STATE.designOverall}</p>
+    </div>
+    ${dimsHtml}
+    <div class="btn-group">
+      ${btn('🚀 生成最终作品方案', 'btn-primary', 'renderPhase6()')}
+      ${btn('← 返回修改功能', 'btn-outline', 'backToPhase4FromDesignEval()')}
+    </div>
+  `;
+}
+
+async function evaluateDesign() {
+  buildPhaseBar();
+  main.innerHTML = `<div class="loading"><span class="spinner">📊</span><p>小P 正在从 6 个维度评价你的想法……</p></div>`;
+
+  try {
+    const prompt = `请用以下 6 个维度评价学生的智能硬件作品想法。每个维度 1-5 星，附简短评语（15字以内）。
+
+学生年级：${STATE.ageGroup?.label || '中小学'}
+创作方向：${STATE.allContext.scenario}
+核心问题：${STATE.allContext.coreProblem}
+学生思考回答：
+${STATE.allContext.answers}
+调研结果：
+${STATE.allContext.research || '（无）'}
+选定功能：
+${STATE.allContext.features || '（无）'}
+
+六个维度：
+1. 需求度：目标用户真的需要这个智能硬件吗？
+2. 有效性：这个方案能有效解决问题吗？
+3. 简洁性：方案够简单直接吗？有没有多余的硬件？
+4. 创新性：有新意吗？和现有方案有什么不同？
+5. 可行性：用现有 ESP32-S3 模块能真正做出来吗？
+6. 体验感：用起来有趣、好看、顺手吗？
+
+请按${STATE.ageGroup?.label || '学生'}水平评价，标准可以稍微严格一点（让学生有提升空间），初始得分不要太高。
+
+输出格式（必须严格，不要加粗）：
+需求度：3星
+评语：xxx
+有效性：2星
+评语：xxx
+简洁性：3星
+评语：xxx
+创新性：2星
+评语：xxx
+可行性：3星
+评语：xxx
+体验感：2星
+评语：xxx
+总评：xxx`;
+
+    const result = await callAI(prompt);
+    const scores = {};
+    for (const dim of DESIGN_DIMS) {
+      const starM = result.match(new RegExp(`${dim.name}[：:]\\s*(\\d)\\s*星`));
+      const cmtM = result.match(new RegExp(`${dim.name}[\\s\\S]*?评语[：:]\\s*(.+?)(?=\\n|$)`));
+      scores[dim.id] = {
+        stars: starM ? parseInt(starM[1]) : 3,
+        comment: cmtM ? cleanTitle(cmtM[1].trim()) : '加油！'
+      };
+    }
+    const overallM = result.match(/总评[：:]\s*(.+)/);
+    STATE.designScores = scores;
+    STATE.designOverall = overallM ? cleanTitle(overallM[1].trim()) : '整体想法不错，还有提升空间！';
+    STATE._improvedDims = new Set();
+    renderDesignEval();
+  } catch (e) {
+    renderPhase6();
+  }
+}
+
+async function improveDimension(dimId) {
+  const dim = DESIGN_DIMS.find(d => d.id === dimId);
+  main.innerHTML = `<div class="loading"><span class="spinner">🧠</span><p>小P 正在为「${dim.name}」出深度思考题……</p></div>`;
+
+  try {
+    const prompt = `学生读${STATE.ageGroup?.label || '中小学'}，正在设计一个 ESP32-S3 智能硬件作品。
+
+创作方向：${STATE.allContext.scenario}
+核心问题：${STATE.allContext.coreProblem}
+学生思考回答：
+${STATE.allContext.answers}
+调研结果：
+${STATE.allContext.research || '（无）'}
+选定功能：
+${STATE.allContext.features || '（无）'}
+
+现在学生想在「${dim.name}」这个维度上做得更好。
+
+请针对这个维度，设计 3 道引导式选择题（每道 3 个选项），帮助学生深度思考如何提升这个维度。
+
+要求：
+- 题目要有启发性，引导学生从不同角度重新审视自己的硬件设计
+- 选项要具体、有对比性，且必须是 ESP32-S3 + 现有传感器/执行器能实现的
+- 不要直接给答案，而是通过选项让学生自己想到改进方向
+- 难度适合${STATE.ageGroup?.label || '学生'}
+- 不要出现 Markdown 加粗符号（如 **）
+
+格式：
+题1：xxx
+A：xxx
+B：xxx
+C：xxx
+
+题2：xxx
+A：xxx
+B：xxx
+C：xxx
+
+题3：xxx
+A：xxx
+B：xxx
+C：xxx`;
+
+    const result = await callAI(prompt);
+    STATE._improvQuestions = parseQuestions(result);
+    STATE._improvDim = dimId;
+    STATE._improvAnswers = [];
+    STATE._improvIdx = 0;
+    renderImprovQuestions();
+  } catch (e) {
+    showToast('⚠️ 生成失败：' + e.message);
+    renderDesignEval();
+  }
+}
+
+function renderImprovQuestions() {
+  const q = STATE._improvQuestions[STATE._improvIdx];
+  const dim = DESIGN_DIMS.find(d => d.id === STATE._improvDim);
+  buildPhaseBar();
+
+  if (!q) {
+    submitImprovAnswers();
+    return;
+  }
+
+  const isCustom = STATE._improvMode === 'custom';
+
+  main.innerHTML = `
+    <div class="msg msg-ai">
+      <div class="avatar">🧠</div>
+      <div class="bubble">
+        <strong>深度思考：${dim.icon} ${dim.name} (${STATE._improvIdx + 1}/${STATE._improvQuestions.length})</strong><br>
+        ${q.title}
+      </div>
+    </div>
+    ${isCustom ? `
+      <div style="margin-top:10px;">
+        <textarea class="text-input" id="improvCustomInput" style="min-height:100px;" placeholder="用你自己的话回答这道题……"></textarea>
+        <div class="btn-group">
+          ${btn('✅ 提交自己的答案', 'btn-primary', 'submitImprovCustom()')}
+          ${btn('↩ 返回选项', 'btn-outline', 'cancelImprovCustom()')}
+        </div>
+      </div>
+    ` : `
+      <div class="choice-list">${q.opts.map(o => `
+        <div class="choice-card" onclick="answerImprovQ('${o.key}','${o.text.replace(/'/g,"\\'")}')">
+          <div class="choice-dot"></div>
+          <div class="choice-text"><strong>${o.key}.</strong> ${o.text}</div>
+        </div>
+      `).join('')}
+        <div class="choice-card" onclick="skipImprovQ()" style="border-style:dashed;border-color:#bbb;">
+          <div class="choice-dot" style="border-color:#bbb;">🚫</div>
+          <div class="choice-text" style="color:#888;"><strong>D.</strong> 这些选项都不符合我的想法</div>
+        </div>
+        <div class="choice-card" onclick="showImprovCustom()" style="border-style:dashed;border-color:var(--orange);">
+          <div class="choice-dot" style="border-color:var(--orange);">✏️</div>
+          <div class="choice-text" style="color:var(--orange);"><strong>E.</strong> 我自己写答案</div>
+        </div>
+      </div>
+    `}
+  `;
+}
+
+function answerImprovQ(key, text) {
+  STATE._improvAnswers.push({ key, text });
+  STATE._improvIdx++;
+  delete STATE._improvMode;
+  setTimeout(() => renderImprovQuestions(), 300);
+}
+
+function skipImprovQ() {
+  STATE._improvAnswers.push({ key: 'D', text: '这些选项都不符合我的想法' });
+  STATE._improvIdx++;
+  delete STATE._improvMode;
+  setTimeout(() => renderImprovQuestions(), 300);
+}
+
+function showImprovCustom() {
+  STATE._improvMode = 'custom';
+  renderImprovQuestions();
+}
+
+function cancelImprovCustom() {
+  delete STATE._improvMode;
+  renderImprovQuestions();
+}
+
+function submitImprovCustom() {
+  const input = document.getElementById('improvCustomInput');
+  const text = input.value.trim();
+  if (!text) { showToast('请输入你的答案'); return; }
+  STATE._improvAnswers.push({ key: 'E', text: text });
+  STATE._improvIdx++;
+  delete STATE._improvMode;
+  setTimeout(() => renderImprovQuestions(), 300);
+}
+
+async function submitImprovAnswers() {
+  const dim = DESIGN_DIMS.find(d => d.id === STATE._improvDim);
+  main.innerHTML = `<div class="loading"><span class="spinner">📈</span><p>小P 正在重新评价你的「${dim.name}」……</p></div>`;
+
+  try {
+    const answers = STATE._improvAnswers.map((a, i) => `Q: ${STATE._improvQuestions[i].title}\nA: ${a.text}`).join('\n');
+
+    const prompt = `学生原本在「${dim.name}」维度得分是 ${STATE.designScores[STATE._improvDim].stars} 星。
+
+学生经过深度思考后，回答了以下问题：
+${answers}
+
+请根据学生的思考质量，给出新的评分（1-5星），附简短评语。新得分应该比原得分高或持平，最高 5 星。
+
+格式：
+新得分：X星
+新评语：xxx
+
+注意：不要出现 Markdown 加粗符号（如 **）。`;
+
+    const result = await callAI(prompt);
+    const starM = result.match(/新得分[：:]\s*(\d)/);
+    const cmtM = result.match(/新评语[：:]\s*(.+)/);
+    const newStars = starM ? parseInt(starM[1]) : Math.min(STATE.designScores[STATE._improvDim].stars + 1, 5);
+
+    STATE.designScores[STATE._improvDim] = {
+      stars: Math.max(newStars, STATE.designScores[STATE._improvDim].stars),
+      comment: cmtM ? cleanTitle(cmtM[1].trim()) : '思考有深度，得分提升！'
+    };
+    STATE._improvedDims.add(STATE._improvDim);
+    // Save improvement thinking for final solution review
+    if (!STATE.allContext.improvements) STATE.allContext.improvements = [];
+    STATE.allContext.improvements.push(`【${dim.name}】\n${answers}`);
+    renderImprovResult(dim);
+  } catch (e) {
+    STATE.designScores[STATE._improvDim].stars = Math.min(STATE.designScores[STATE._improvDim].stars + 1, 5);
+    STATE.designScores[STATE._improvDim].comment = '经过深度思考，评分提升！';
+    STATE._improvedDims.add(STATE._improvDim);
+    if (!STATE.allContext.improvements) STATE.allContext.improvements = [];
+    STATE.allContext.improvements.push(`【${dim.name}】经过深度思考，评分提升`);
+    renderImprovResult(dim);
+  }
+}
+
+function renderImprovResult(dim) {
+  const s = STATE.designScores[STATE._improvDim];
+  const stars = '⭐'.repeat(s.stars) + '☆'.repeat(5 - s.stars);
+
+  main.innerHTML = `
+    <div class="msg msg-ai">
+      <div class="avatar">🎉</div>
+      <div class="bubble">
+        <strong>${dim.icon} ${dim.name} 评分已更新！</strong><br>
+        你的深度思考让这个维度得到了提升。
+      </div>
+    </div>
+    <div style="text-align:center;padding:20px;background:#f0fff0;border-radius:16px;margin:12px 0;">
+      <div style="font-size:36px;font-weight:800;color:var(--green);">${s.stars}<span style="font-size:18px;">/5</span></div>
+      <div style="font-size:22px;">${stars}</div>
+      <p style="font-size:14px;margin-top:6px;">${s.comment}</p>
+    </div>
+    <div class="btn-group">
+      ${btn('📊 回到评价总览', 'btn-primary', 'renderDesignEval()')}
+      ${btn('🚀 生成最终作品方案', 'btn-outline', 'renderPhase6()')}
+    </div>
+  `;
+}
+
+function backToPhase4FromDesignEval() { STATE.phase = 4; renderPhase4(); }
+
+// ═══ Phase 6: Hardware Solution Generation ═══
+async function renderPhase6() {
+  buildPhaseBar();
+  main.innerHTML = `<div class="loading"><span class="spinner">🛠️</span><p>小P 正为你生成完整的硬件方案……</p></div>`;
+
+  try {
+    // Build complete hardware reference for AI
+    const allHw = [
+      ...HW.sensors, ...HW.actuators, ...HW.displays, ...HW.power, ...HW.other
+    ];
+    const hwRef = allHw.map(h => `【${h.kid}】${h.name} | 用途：${h.use} | 接线：${h.pins}`).join('\n');
+
+    const prompt = `你是一位面向${STATE.ageGroup?.label || '中小学生'}的硬件创作导师。学生用ESP32-S3制作AI语音助手硬件作品。
+
+请根据以下信息生成一份完整的硬件作品方案：
+
+【年级】${STATE.ageGroup?.label || '中小学'}
+【创作方向】${STATE.allContext.scenario}
+【核心问题】${STATE.allContext.coreProblem}
+【学生思考回答】${STATE.allContext.answers}
+【调研结果】${STATE.allContext.research || '（无）'}
+【选定功能】${STATE.allContext.features}
+${STATE.designScores ? `【各维度评分】\n${DESIGN_DIMS.map(d => `${d.name}：${STATE.designScores[d.id].stars}星 - ${STATE.designScores[d.id].comment}`).join('\n')}` : ''}
+${STATE.allContext.improvements ? `【学生看完评分后的重新思考】\n${STATE.allContext.improvements.join('\n\n')}` : ''}
+
+【ESP32-S3 硬件清单（只能从这里面选）】
+主板：ESP32-S3 核心板 + 扩展板（带Type-C、扬声器、WiFi、蓝牙、AI语音）
+${hwRef}
+
+主板默认资源：ESP32-S3 N16R8，WiFi+蓝牙，Type-C供电，内置扬声器接DAC引脚
+
+请按以下格式输出（各部分必须严格保留标签，不要出现 Markdown 加粗符号 **）：
+
+[一、我们的思考之路]
+请用小标题分别总结（适合${STATE.ageGroup?.label || '学生'}理解，语言生动，不要干巴巴）：
+### 问题回顾
+总结学生选了什么场景、确定的用户是谁、核心问题是什么。不要简单罗列，要像讲故事一样串起来，200-400字。
+
+### 调研回顾
+总结学生调研了什么、发现了什么、调研如何改变了或坚定了他们的想法。150-300字。
+
+### 改进回顾
+总结学生通过多维评价，在哪些维度上做了深入思考，改进了什么。150-300字。
+
+[二、作品设计]
+### 项目简介
+一句话说说这个作品是什么、给谁用、解决什么问题。
+
+### 核心交互
+描述用户和作品是怎么互动的：用户做什么，作品怎么回应，用到了哪些硬件能力。要体现学生的想法，不要脱离前面的思考。字数根据学生想法多少灵活调整，不要限制太死。
+
+[三、技术实现]
+### 硬件清单
+用表格列出所需硬件，只选用上面清单里有的。格式：
+| 序号 | 硬件名称 | 数量 | 用途说明 |
+|------|---------|------|---------|
+| 1 | ESP32-S3 核心板+扩展板 | 1 | 主控板，运行程序和AI |
+...（根据功能需要列出，只选必要的）
+
+### 接线表
+用表格列出ESP32-S3和各模块的引脚连接。格式：
+| ESP32-S3 引脚 | 连接模块 | 模块引脚 | 说明 |
+|-------------|---------|---------|------|
+...（引脚要合理分配，不能冲突，I2C设备共用SCL/SDA总线）
+
+### 编程思路
+用简单易懂的方式描述程序的运行逻辑，适合${STATE.ageGroup?.label || '学生'}理解。
+要求：
+- 用"步骤1、步骤2……"的形式
+- 语言简明，像给朋友讲解
+- 提到关键的米思齐积木块类型（如：WiFi连接、AI语音识别、GPIO输出、I2C读取等）
+- 不要写代码，只描述逻辑
+- 每个步骤可以长一点，详细描述做了什么、为什么这么做，不要死板限制字数
+
+注意：硬件方案必须和学生的思考、调研、改进息息相关。学生投入了很多思考，方案里要体现出来。如果学生想法多、功能多，方案字数就多一些，保持${STATE.ageGroup?.label || '学生'}能读懂的表述即可。
+
+额外说明：引脚分配要合理，同类型传感器（如I2C设备）可以共用SCL/SDA线。ESP32-S3的GPIO尽量用低编号的（如GPIO4、5、13、14、16、17、18、19、21、22、23、25、26、27、32、33），避免使用已被占用的引脚（如GPIO0、2、12、15等）。ADC2的引脚（如GPIO4、0、2等）在WiFi开启时可能不可用，优先用ADC1（GPIO32-39）。`;
+
+    const result = await callAI(prompt, MODEL_PRO);
+    STATE.hardwareSolution = result;
+    renderSolutionResult();
+  } catch (e) {
+    main.innerHTML = `<div class="msg msg-ai"><div class="avatar">😢</div><div class="bubble">生成方案失败：${e.message}<br>${btn('🔄 重试', 'btn-outline', 'renderPhase6()')}</div></div>`;
+  }
+}
+
+function parseSolution(text) {
+  const t = String(text || '');
+  const sections = {};
+  const thinkingM = t.match(/\[一、我们的思考之路\]([\s\S]*?)(?=\[二|$)/);
+  const designM = t.match(/\[二、作品设计\]([\s\S]*?)(?=\[三|$)/);
+  const techM = t.match(/\[三、技术实现\]([\s\S]*?)$/);
+  sections.thinking = thinkingM && thinkingM[1] ? thinkingM[1].trim() : '';
+  sections.design = designM && designM[1] ? designM[1].trim() : '';
+  sections.tech = techM && techM[1] ? techM[1].trim() : '';
+  return sections;
+}
+
+function renderSolutionResult() {
+  buildPhaseBar();
+  const sol = parseSolution(STATE.hardwareSolution);
+  window._solutionData = sol;
+
+  const techSections = parseTechSection(sol.tech);
+
+  main.innerHTML = `
+    <div class="msg msg-ai">
+      <div class="avatar">🛠️</div>
+      <div class="bubble">
+        <strong>🎉 你的硬件作品方案已生成！</strong><br>
+        下面是根据你一路思考和调研生成的完整方案。先看回顾，再看技术怎么实现。
+      </div>
+    </div>
+
+    ${sol.thinking ? `
+    <div class="result-block" style="border-left-color:var(--navy);background:linear-gradient(135deg,#f8fbff,#fff);">
+      <h2>🧭 一、我们的思考之路</h2>
+      <div class="body">${marked.parse(sol.thinking)}</div>
+    </div>
+    ` : ''}
+
+    ${sol.design ? `
+    <div class="result-block" style="border-left-color:var(--orange);">
+      <h2>🎯 二、作品设计</h2>
+      <div class="body">${marked.parse(sol.design)}</div>
+    </div>
+    ` : ''}
+
+    ${techSections.bom ? `
+    <div class="result-block" style="border-left-color:var(--green);">
+      <h2>🔩 三、硬件清单</h2>
+      <div class="body">${marked.parse(techSections.bom)}</div>
+    </div>
+    ` : ''}
+
+    ${techSections.wiring ? `
+    <div class="result-block" style="border-left-color:var(--gold);">
+      <h2>🔌 四、接线表</h2>
+      <p style="font-size:13px;color:var(--text-light);margin-bottom:8px;">按下面的表把线和模块接好就行啦～</p>
+      <div class="body">${marked.parse(techSections.wiring)}</div>
+    </div>
+    ` : ''}
+
+    ${techSections.programming ? `
+    <div class="result-block" style="border-left-color:var(--navy);">
+      <h2>💻 五、编程思路</h2>
+      <p style="font-size:13px;color:var(--text-light);margin-bottom:8px;">用米思齐（Mixly）图形化编程，按这个思路来！</p>
+      <div class="body">${marked.parse(techSections.programming)}</div>
+    </div>
+    ` : ''}
+
+    <div class="btn-group">
+      ${btn('📋 复制全部方案', 'btn-copy', 'copyFullSolution()')}
+      ${btn('🔄 重新生成方案', 'btn-outline', 'renderPhase6()')}
+      ${btn('← 返回修改评价维度', 'btn-outline', 'backToDesignEval()')}
+    </div>
+    <div class="btn-group" style="margin-top:8px;">
+      ${btn('🔁 重新开始（做新作品）', 'btn-outline', 'resetAll()')}
+    </div>
+  `;
+}
+
+function parseTechSection(text) {
+  const t = String(text || '');
+  const sections = {};
+  const bomM = t.match(/###\s*硬件清单([\s\S]*?)(?=###\s*接线表|$)/);
+  const wiringM = t.match(/###\s*接线表([\s\S]*?)(?=###\s*编程思路|$)/);
+  const progM = t.match(/###\s*编程思路([\s\S]*?)$/);
+  sections.bom = bomM && bomM[1] ? bomM[1].trim() : '';
+  sections.wiring = wiringM && wiringM[1] ? wiringM[1].trim() : '';
+  sections.programming = progM && progM[1] ? progM[1].trim() : '';
+  return sections;
+}
+
+function backToDesignEval() { STATE.phase = 5; renderDesignEval(); }
+
+async function copyFullSolution() {
+  const sol = window._solutionData;
+  const tech = parseTechSection(sol.tech);
+  const full = `=== 硬件作品方案 ===\n\n一、我们的思考之路\n${sol.thinking}\n\n二、作品设计\n${sol.design}\n\n三、硬件清单\n${tech.bom}\n\n四、接线表\n${tech.wiring}\n\n五、编程思路\n${tech.programming}`;
+  await copyToClipboard(full);
+  showToast('✅ 方案已复制！');
+}
+
+async function copyToClipboard(text) {
+  try { await navigator.clipboard.writeText(text); }
+  catch { const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
+}
+
+// ═══ API Key Modal ═══
+function showApiModal() {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:20px;padding:28px;max-width:440px;width:100%;text-align:center;position:relative;border-top:3px solid var(--navy);">
+      <button onclick="this.parentElement.parentElement.remove()" style="position:absolute;top:12px;right:16px;width:28px;height:28px;border-radius:50%;border:none;background:#f0f0f0;font-size:14px;cursor:pointer;">✕</button>
+      <div style="font-size:40px;margin-bottom:10px;">🔑</div>
+      <h2 style="color:var(--navy);">配置 API Key</h2>
+      <p style="font-size:13px;color:var(--text-light);margin:8px 0 16px;">去 platform.deepseek.com 获取 Key</p>
+      <input type="password" id="apiKeyModalInput" placeholder="sk-xxxxxxxx" style="width:100%;padding:12px;border:2px solid var(--border);border-radius:12px;font-size:14px;font-family:monospace;margin-bottom:12px;">
+      <p id="apiErr" style="color:#e74c3c;font-size:12px;margin-bottom:8px;display:none;">Key 格式不正确</p>
+      <button class="btn btn-primary" onclick="saveApiKey()">保存并继续</button>
+      <p style="font-size:11px;color:#aaa;margin-top:8px;">仅保存在你当前浏览器中</p>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function saveApiKey() {
+  const input = document.getElementById('apiKeyModalInput');
+  const val = input.value.trim();
+  if (!val.startsWith('sk-')) { document.getElementById('apiErr').style.display = 'block'; return; }
+  setApiKey(val);
+  document.querySelector('[style*="z-index:9999"]')?.remove();
+  showToast('✅ 已保存');
+  if (STATE.phase === 1) renderPhase1Start();
+}
+
+// ═══ Reset ═══
+function resetAll() {
+  STATE.phase = 0; STATE.ageGroup = null; STATE.scenario = null;
+  STATE.questions = []; STATE.questionIdx = 0; STATE.userAnswers = [];
+  STATE.coreProblem = ''; STATE.researchNotes = ''; STATE.researchTask = null; STATE.researchEval = null;
+  STATE.selectedFeatures = [];
+  STATE.designScores = null; STATE.designOverall = ''; STATE._improvedDims = new Set();
+  STATE.hardwareSolution = null;
+  STATE.allContext = {};
+  STATE._featureData = null; STATE._selectedCore = null;
+  STATE._improvQuestions = null; STATE._improvDim = null; STATE._improvAnswers = []; STATE._improvIdx = 0;
+  window._featData = []; window._selFeat = new Set();
+  renderAgeSelect();
+}
+
+// ═══ Test backdoor ═══
+function brainBackdoor() {
+  // 老师专用：跳过当前阶段的检查/ gate
+  if (STATE.phase === 3) {
+    STATE.researchEval = { score: 8, comment: '（已跳过）', passed: true };
+    STATE.phase = 4;
+    renderPhase4();
+    showToast('🔧 已跳过调研阶段');
+  } else if (STATE.phase === 5) {
+    STATE.designScores = {};
+    DESIGN_DIMS.forEach(d => { STATE.designScores[d.id] = { stars: 4, comment: '（已跳过）' }; });
+    STATE._improvedDims = new Set(DESIGN_DIMS.map(d => d.id));
+    STATE.phase = 6;
+    renderPhase6();
+    showToast('🔧 已跳过多维评价');
+  } else if (STATE.phase === 1) {
+    // 跳过思辨题，直接用一个默认答案
+    STATE.questions = [
+      { title: '你想要做一个什么样的智能硬件？', opts: [] },
+      { title: '这个作品主要给谁用？', opts: [] },
+      { title: '他们最需要解决什么问题？', opts: [] },
+      { title: '他们会什么时候使用这个作品？', opts: [] }
+    ];
+    STATE.userAnswers = [
+      { key: 'A', text: '一个有趣的智能硬件作品' },
+      { key: 'A', text: '我和我的朋友们' },
+      { key: 'A', text: '让生活更方便' },
+      { key: 'A', text: '在学习和生活中使用' }
+    ];
+    STATE.phase = 2;
+    STATE.allContext.answers = STATE.userAnswers.map((a, i) => `Q: ${STATE.questions[i].title}\nA: ${a.text}`).join('\n');
+    renderPhase2();
+    showToast('🔧 已跳过思辨问答');
+  } else {
+    showToast('🔧 当前阶段没有可跳过的检查');
+  }
+}
+
+// ═══ Init ═══
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('brainIcon').addEventListener('click', brainBackdoor);
+});
+renderAgeSelect();
+</script>
+</body>
+</html>
