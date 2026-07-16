@@ -188,11 +188,13 @@ const API_URL = 'https://api.deepseek.com/chat/completions';
 const MODEL_FLASH = 'deepseek-v4-flash';
 const MODEL_PRO = 'deepseek-v4-pro';
 const LS_KEY = 'hw_design_thinking_ds_key';
-function getApiKey() { return localStorage.getItem(LS_KEY) || 'sk-f0527cfcf9c14c54892818cc37dc45bd'; }
+function getApiKey() { return localStorage.getItem(LS_KEY) || ''; }
 function setApiKey(k) { localStorage.setItem(LS_KEY, k); }
 function hasApiKey() { const k = getApiKey(); return k && k.startsWith('sk-'); }
 
 async function callAI(prompt, model) {
+  const key = getApiKey();
+  if (!key || !key.startsWith('sk-')) throw new Error('请先配置 API Key');
   const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getApiKey()}` },
