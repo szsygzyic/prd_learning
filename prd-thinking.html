@@ -153,7 +153,7 @@ const API_URL = 'https://api.deepseek.com/chat/completions';
 const MODEL_FLASH = 'deepseek-v4-flash';
 const MODEL_PRO = 'deepseek-v4-pro';
 const LS_KEY = 'prd_thinking_ds_key';
-function getApiKey() { return localStorage.getItem(LS_KEY) || 'sk-f0527cfcf9c14c54892818cc37dc45bd'; }
+function getApiKey() { return localStorage.getItem(LS_KEY) || ''; }
 function setApiKey(k) { localStorage.setItem(LS_KEY, k); }
 function hasApiKey() { const k = getApiKey(); return k && k.startsWith('sk-'); }
 
